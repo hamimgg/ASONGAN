@@ -1,0 +1,124 @@
+<svg
+  xmlns="http://www.w3.org/2000/svg"
+  viewBox="0 0 200 200"
+  width="200"
+  height="200"
+>
+  <!--
+  ╔══════════════════════════════════════════════════════╗
+  ║           LOGO ASONGAN — Konsep A                   ║
+  ║    Keranjang Belanja + Pin Lokasi                   ║
+  ╠══════════════════════════════════════════════════════╣
+  ║  PANDUAN EDIT:                                      ║
+  ║                                                     ║
+  ║  Warna utama:                                       ║
+  ║    Background   → #1C1C1E  (grup id="bg")           ║
+  ║    Ikon oranye  → #F5A623  (grup id="icon-orange")  ║
+  ║    Pin putih    → #FFFFFF  (grup id="icon-pin")     ║
+  ║                                                     ║
+  ║  Ukuran:                                            ║
+  ║    viewBox="0 0 200 200" — jangan diubah            ║
+  ║    Ganti width/height untuk resize                  ║
+  ║                                                     ║
+  ║  Untuk versi tanpa background (transparan):         ║
+  ║    Hapus elemen <rect id="background" .../>         ║
+  ║                                                     ║
+  ║  Untuk versi oranye (warna terbalik):               ║
+  ║    Ganti fill background → #F5A623                  ║
+  ║    Ganti fill icon-orange → #1C1C1E                 ║
+  ╚══════════════════════════════════════════════════════╝
+  -->
+
+  <!-- ── BACKGROUND ─────────────────────────────────── -->
+  <g id="bg">
+    <rect
+      id="background"
+      x="0" y="0"
+      width="200" height="200"
+      rx="40"
+      fill="#1C1C1E"
+    />
+  </g>
+
+  <!-- ── IKON ORANYE: keranjang + handle + roda ──────── -->
+  <g id="icon-orange" fill="none" stroke="#F5A623">
+
+    <!-- Handle keranjang (lengkungan di atas) -->
+    <path
+      id="handle"
+      d="M74 72 Q74 50 100 50 Q126 50 126 72"
+      stroke-width="7"
+      stroke-linecap="round"
+      fill="none"
+    />
+
+    <!-- Garis horizontal atas keranjang -->
+    <line
+      id="bar"
+      x1="36" y1="72"
+      x2="164" y2="72"
+      stroke-width="7"
+      stroke-linecap="round"
+    />
+
+    <!-- Badan keranjang (trapesium) -->
+    <path
+      id="basket-body"
+      d="M50 72 L64 128 H136 L150 72"
+      stroke-width="7"
+      stroke-linejoin="round"
+      fill="none"
+    />
+
+    <!-- Roda kiri -->
+    <circle
+      id="wheel-left"
+      cx="76" cy="140"
+      r="10"
+      stroke-width="6"
+      fill="#1C1C1E"
+    />
+
+    <!-- Roda kanan -->
+    <circle
+      id="wheel-right"
+      cx="124" cy="140"
+      r="10"
+      stroke-width="6"
+      fill="#1C1C1E"
+    />
+
+  </g>
+
+  <!-- ── IKON PUTIH: pin lokasi di dalam keranjang ───── -->
+  <g id="icon-pin">
+
+    <!-- Lingkaran kepala pin -->
+    <circle
+      id="pin-head"
+      cx="100" cy="92"
+      r="14"
+      fill="#FFFFFF"
+    />
+
+    <!-- Ekor pin (garis ke bawah) -->
+    <line
+      id="pin-tail"
+      x1="100" y1="106"
+      x2="100" y2="118"
+      stroke="#FFFFFF"
+      stroke-width="6"
+      stroke-linecap="round"
+    />
+
+    <!-- Titik tengah pin (dot) -->
+    <circle
+      id="pin-dot"
+      cx="100" cy="92"
+      r="5"
+      fill="#1C1C1E"
+    />
+
+  </g>
+
+</svg>
