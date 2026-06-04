@@ -37,16 +37,16 @@ class _AnimationBackgroundState extends State<AnimationBackground>
               left: -100 + (_controller.value * 50),
               bottom: -100 + (_controller.value * 10),
               child: Container(
-                width: 250,
-                height: 250,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xfff5a623),
+                  color: Color(0xff1c1c1e),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xfff5a623),
-                      blurRadius: 120,
-                      spreadRadius: 50,
+                      color: Color(0xff1c1c1e),
+                      blurRadius: 100,
+                      spreadRadius: 500,
                     ),
                   ],
                 ),
@@ -56,18 +56,18 @@ class _AnimationBackgroundState extends State<AnimationBackground>
             // GLOW KANAN ATAS
             Positioned(
               right: -100 + (_controller.value * 80),
-              top: -100 + (_controller.value * -200),
+              top: -100 + (_controller.value * -40),
               child: Container(
-                width: 250,
-                height: 250,
+                width: 50,
+                height: 50,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Color(0xfff5a100),
+                  color: Color(0xff1c1c1e),
                   boxShadow: [
                     BoxShadow(
-                      color: Color(0xfff5a600),
-                      blurRadius: 120,
-                      spreadRadius: 50,
+                      color: Color(0xff1c1c1e),
+                      blurRadius: 100,
+                      spreadRadius: 500,
                     ),
                   ],
                 ),
