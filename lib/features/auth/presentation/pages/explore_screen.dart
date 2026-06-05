@@ -39,28 +39,25 @@ class _HomeScreenState extends State<HomeScreen> {
             onPressed: () {},
             icon: Icon(Icons.notifications_none, color: Colors.white),
           ),
-          Builder(
-            builder: (context) => IconButton(
-              onPressed: () => Scaffold.of(context).openDrawer(),
-              icon: Icon(Icons.menu_rounded, color: Color(0xffffffff)),
-            ),
+          IconButton(
+            onPressed: () => Scaffold.of(context).openEndDrawer(),
+            icon: Icon(Icons.menu_rounded, color: Color(0xffffffff)),
           ),
         ],
       ),
-      endDrawer: Drawer(child: Center(child: Text("Menu Aplikasi"))),
       body: SlidingUpPanel(
         body: Container(
           decoration: BoxDecoration(
             image: DecorationImage(
-              image: AssetImage("assets/images/map_jaksel.png"),
+              image: AssetImage("assets/images/map_jakarta_light.png"),
               fit: BoxFit.cover,
             ),
           ),
         ),
 
         color: Color(0xff1c1c1e),
-        minHeight: 200,
-        maxHeight: 600,
+        minHeight: 60,
+        maxHeight: 300,
 
         borderRadius: const BorderRadius.vertical(
           top: Radius.elliptical(64, 20),
@@ -85,7 +82,7 @@ class _HomeScreenState extends State<HomeScreen> {
                     child: Row(
                       children: [
                         Text(
-                          "Pedagang Aktif (2)",
+                          "Pedagang Aktif ()",
                           style: TextStyle(
                             color: Color(0xffffffff),
                             fontSize: 20,

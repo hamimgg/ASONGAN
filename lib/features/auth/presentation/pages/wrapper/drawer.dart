@@ -1,3 +1,7 @@
+import 'package:asongan_app/features/auth/data/auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
+import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
 import 'package:flutter/material.dart';
 
@@ -9,36 +13,91 @@ class MainDrawer extends StatefulWidget {
 }
 
 class _MainDrawerState extends State<MainDrawer> {
+  UserModelSql? _currentUser;
+  String _activeMode = 'pembeli';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+  }
+
+  Future<void> _loadUser() async {
+    final user = await AuthService.getUserSession();
+    final mode = await AuthService.getActiveMode();
+    setState(() {
+      _currentUser = user;
+      _activeMode = mode ?? 'pembeli';
+    });
+  }
+
+  Future<void> _switchMode() async {
+    final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
+    
+    // Jika belum login, ke halaman login
+    if (_currentUser == null) {
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (_) => const LoginPage()),
+      );
+      return;
+    }
+
+    // Jika sudah login tapi role-nya pembeli dan mau ke pedagang, tolak
+    if (newMode == 'pedagang' && _currentUser!.role == 'pembeli') {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Akun Anda bukan akun pedagang!')),
+      );
+      return;
+    }
+
+    await AuthService.setActiveMode(newMode);
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const MainWrapper()),
+    );
+  }
+
+  Future<void> _logout() async {
+    await AuthService.clearSession();
+    if (!mounted) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(builder: (_) => const LoginPage()),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Drawer(
-      backgroundColor: Color(0xff1c1c1e),
+      backgroundColor: const Color(0xff1c1c1e),
       child: Column(
         children: [
           DrawerHeader(
             child: Row(
               children: [
-                CircleAvatar(
+                const CircleAvatar(
                   radius: 32,
                   backgroundColor: Colors.white24,
                   child: Icon(Icons.person, color: Colors.white, size: 36),
                 ),
-                SizedBox(width: 12),
+                const SizedBox(width: 12),
                 Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      "Nama User",
-                      style: TextStyle(
+                      _currentUser?.nama ?? "Guest",
+                      style: const TextStyle(
                         color: Colors.white,
                         fontWeight: FontWeight.bold,
                         fontSize: 16,
                       ),
                     ),
                     Text(
-                      "user@email.com",
-                      style: TextStyle(color: Colors.white70, fontSize: 12),
+                      _currentUser?.email ?? "Belum login",
+                      style: const TextStyle(color: Colors.white70, fontSize: 12),
                     ),
                   ],
                 ),
@@ -52,14 +111,26 @@ class _MainDrawerState extends State<MainDrawer> {
               Navigator.pop(context); // tutup drawer
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (_) => SettingsScreen()),
+                MaterialPageRoute(builder: (_) => const SettingsScreen()),
               );
             },
           ),
+          const Spacer(),
+          _drawerItem(
+            icon: Icons.swap_horiz,
+            label: _activeMode == 'pembeli' ? "Login sebagai pedagang" : "Mode Pembeli",
+            onTap: _switchMode,
+          ),
+          _drawerItem(
+            icon: Icons.logout,
+            label: "Logout",
+            color: Colors.red,
+            onTap: _logout,
+          ),
+          const SizedBox(height: 20),
         ],
       ),
     );
-    // _draweItem(icon: Icon(icon))
   }
 
   Widget _drawerItem({
