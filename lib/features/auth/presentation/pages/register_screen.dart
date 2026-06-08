@@ -1,6 +1,7 @@
 import 'package:asongan_app/core/animations/animation_background.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 
 class RegisterPage extends StatefulWidget {
@@ -29,211 +30,291 @@ class _RegisterPageState extends State<RegisterPage> {
   ];
 
   @override
+  void dispose() {
+    namaController.dispose();
+    emailController.dispose();
+    teleponController.dispose();
+    passwordController.dispose();
+    namaTokoController.dispose();
+    namaMakananController.dispose();
+    super.dispose();
+  }
+
+  @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: Color(0xFF1c1c1e),
-      appBar: AppBar(
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: Colors.white),
-          onPressed: () => Navigator.pop(context),
-        ),
-      ),
-      body: Stack(
-        children: [
-          const AnimationBackground(),
-          Center(
-            child: SingleChildScrollView(
-              padding: EdgeInsets.all(16),
-              child: Column(
-                children: [
-                  Text(
-                    'Daftar Akun ${widget.isPedagang ? "Pedagang" : "Pembeli"}',
-                    style: TextStyle(
-                      fontSize: 22,
-                      color: Color(0xffffffff),
-                      fontWeight: FontWeight.bold,
+    return ValueListenableBuilder<bool>(
+      valueListenable: isDarkModeNotifier,
+      builder: (context, isDark, child) {
+        final Color scaffoldBg = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF8F9FA);
+        final Color cardBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
+        final Color cardBorder = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
+        final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+        final Color inputFill = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9);
+        final Color inputBorder = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
+        final Color iconColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+        final Color dividerColor = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
+
+        return Scaffold(
+          backgroundColor: scaffoldBg,
+          appBar: AppBar(
+            backgroundColor: Colors.transparent,
+            elevation: 0,
+            leading: IconButton(
+              icon: Icon(Icons.arrow_back_rounded, color: iconColor),
+              onPressed: () => Navigator.pop(context),
+            ),
+          ),
+          body: Stack(
+            children: [
+              if (isDark) const AnimationBackground(),
+              Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: cardBg,
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: cardBorder, width: 0.5),
+                      boxShadow: isDark
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 15,
+                                spreadRadius: 2,
+                              )
+                            ],
                     ),
-                  ),
-                  SizedBox(height: 24),
-                  Form(
-                    key: _formKey,
+                    padding: const EdgeInsets.fromLTRB(20, 24, 20, 24),
                     child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        _buildTextField(
-                          controller: namaController,
-                          hint: "Nama Lengkap",
-                          icon: Icons.person_outline,
-                        ),
-                        SizedBox(height: 16),
-                        _buildTextField(
-                          controller: emailController,
-                          hint: "Email",
-                          icon: Icons.mail_outline_sharp,
-                          validator: (value) {
-                            if (value == null || value.isEmpty)
-                              return "Email tidak boleh kosong";
-                            if (!value.contains('@'))
-                              return "Format email tidak valid";
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 16),
-                        _buildTextField(
-                          controller: teleponController,
-                          hint: "Nomor Telepon",
-                          icon: Icons.phone_outlined,
-                          keyboardType: TextInputType.phone,
-                        ),
-                        SizedBox(height: 16),
-                        _buildTextField(
-                          controller: passwordController,
-                          hint: "Kata Sandi",
-                          icon: Icons.lock_outline_sharp,
-                          obscureText: true,
-                          validator: (value) {
-                            if (value == null || value.isEmpty)
-                              return "Kata sandi tidak boleh kosong";
-                            if (value.length < 6)
-                              return "Kata sandi terlalu singkat";
-                            return null;
-                          },
-                        ),
-
-                        if (widget.isPedagang) ...[
-                          SizedBox(height: 16),
-                          Divider(color: Colors.white54),
-                          SizedBox(height: 16),
-                          _buildTextField(
-                            controller: namaTokoController,
-                            hint: "Nama Toko",
-                            icon: Icons.store_mall_directory_outlined,
-                            validator: (value) => value == null || value.isEmpty
-                                ? "Nama toko wajib diisi"
-                                : null,
+                        Text(
+                          'Daftar Akun ${widget.isPedagang ? "Pedagang" : "Pembeli"}',
+                          style: TextStyle(
+                            fontSize: 22,
+                            color: textColor,
+                            fontWeight: FontWeight.bold,
+                            fontFamily: 'Plus Jakarta Sans',
                           ),
-                          SizedBox(height: 16),
-                          DropdownButtonFormField<String>(
-                            initialValue: jenisProduk,
-                            decoration: InputDecoration(
-                              hintText: "Jenis Produk",
-                              hintStyle: TextStyle(color: Color(0xFFffffff)),
-                              focusedBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Color(0xFFFfffff),
+                          textAlign: TextAlign.center,
+                        ),
+                        const SizedBox(height: 24),
+                        Form(
+                          key: _formKey,
+                          child: Column(
+                            children: [
+                              _buildTextField(
+                                controller: namaController,
+                                hint: "Nama Lengkap",
+                                icon: Icons.person_outline_rounded,
+                                fillColor: inputFill,
+                                borderColor: inputBorder,
+                                textColor: textColor,
+                                isDark: isDark,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: emailController,
+                                hint: "Email",
+                                icon: Icons.mail_outline_rounded,
+                                fillColor: inputFill,
+                                borderColor: inputBorder,
+                                textColor: textColor,
+                                isDark: isDark,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return "Email tidak boleh kosong";
+                                  }
+                                  if (!value.contains('@')) {
+                                    return "Format email tidak valid";
+                                  }
+                                  return null;
+                                },
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: teleponController,
+                                hint: "Nomor Telepon",
+                                icon: Icons.phone_outlined,
+                                keyboardType: TextInputType.phone,
+                                fillColor: inputFill,
+                                borderColor: inputBorder,
+                                textColor: textColor,
+                                isDark: isDark,
+                              ),
+                              const SizedBox(height: 16),
+                              _buildTextField(
+                                controller: passwordController,
+                                hint: "Kata Sandi",
+                                icon: Icons.lock_outline_rounded,
+                                obscureText: true,
+                                fillColor: inputFill,
+                                borderColor: inputBorder,
+                                textColor: textColor,
+                                isDark: isDark,
+                                validator: (value) {
+                                  if (value == null || value.isEmpty) {
+                                    return "Kata sandi tidak boleh kosong";
+                                  }
+                                  if (value.length < 6) {
+                                    return "Kata sandi terlalu singkat";
+                                  }
+                                  return null;
+                                },
+                              ),
+
+                              if (widget.isPedagang) ...[
+                                const SizedBox(height: 16),
+                                Divider(color: dividerColor, thickness: 1),
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: namaTokoController,
+                                  hint: "Nama Toko",
+                                  icon: Icons.storefront_rounded,
+                                  fillColor: inputFill,
+                                  borderColor: inputBorder,
+                                  textColor: textColor,
+                                  isDark: isDark,
+                                  validator: (value) => value == null || value.isEmpty
+                                      ? "Nama toko wajib diisi"
+                                      : null,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              enabledBorder: OutlineInputBorder(
-                                borderSide: BorderSide(
-                                  color: Color(0xFFFfffff),
+                                const SizedBox(height: 16),
+                                DropdownButtonFormField<String>(
+                                  initialValue: jenisProduk,
+                                  decoration: InputDecoration(
+                                    hintText: "Jenis Produk",
+                                    hintStyle: TextStyle(
+                                      color: isDark ? const Color(0xFF5A5A5C) : const Color(0xFF9E9E9E),
+                                      fontSize: 14,
+                                      fontFamily: 'Plus Jakarta Sans',
+                                    ),
+                                    filled: true,
+                                    fillColor: inputFill,
+                                    contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                                    border: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: inputBorder),
+                                    ),
+                                    enabledBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: BorderSide(color: inputBorder),
+                                    ),
+                                    focusedBorder: OutlineInputBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                      borderSide: const BorderSide(color: Color(0xFFF5A623), width: 1.5),
+                                    ),
+                                    prefixIcon: Icon(
+                                      Icons.category_outlined,
+                                      color: isDark ? const Color(0xFF7A7A7C) : const Color(0xFF9E9E9E),
+                                      size: 20,
+                                    ),
+                                  ),
+                                  dropdownColor: cardBg,
+                                  style: TextStyle(
+                                    color: textColor,
+                                    fontSize: 14,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                  items: listJenisProduk.map((String value) {
+                                    return DropdownMenuItem<String>(
+                                      value: value,
+                                      child: Text(value),
+                                    );
+                                  }).toList(),
+                                  onChanged: (newValue) {
+                                    setState(() {
+                                      jenisProduk = newValue;
+                                    });
+                                  },
+                                  validator: (value) =>
+                                      value == null ? "Pilih jenis produk" : null,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              prefixIcon: Icon(
-                                Icons.category_outlined,
-                                color: Colors.white,
-                              ),
-                            ),
-                            dropdownColor: Color(0xff1c1c1e),
-                            style: TextStyle(color: Colors.white),
-                            items: listJenisProduk.map((String value) {
-                              return DropdownMenuItem<String>(
-                                value: value,
-                                child: Text(value),
-                              );
-                            }).toList(),
-                            onChanged: (newValue) {
-                              setState(() {
-                                jenisProduk = newValue;
-                              });
-                            },
-                            validator: (value) =>
-                                value == null ? "Pilih jenis produk" : null,
-                          ),
-                          SizedBox(height: 16),
-                          _buildTextField(
-                            controller: namaMakananController,
-                            hint: "Nama Makanan/Produk",
-                            icon: Icons.fastfood_outlined,
-                            validator: (value) => value == null || value.isEmpty
-                                ? "Nama produk wajib diisi"
-                                : null,
-                          ),
-                        ],
+                                const SizedBox(height: 16),
+                                _buildTextField(
+                                  controller: namaMakananController,
+                                  hint: "Nama Makanan/Produk",
+                                  icon: Icons.fastfood_outlined,
+                                  fillColor: inputFill,
+                                  borderColor: inputBorder,
+                                  textColor: textColor,
+                                  isDark: isDark,
+                                  validator: (value) => value == null || value.isEmpty
+                                      ? "Nama produk wajib diisi"
+                                      : null,
+                                ),
+                              ],
 
-                        SizedBox(height: 32),
-                        SizedBox(
-                          width: double.infinity,
-                          child: ElevatedButton(
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Color(0xFFffffff),
-                              padding: EdgeInsets.symmetric(vertical: 16),
-                            ),
-                            onPressed: () async {
-                              if (_formKey.currentState!.validate()) {
-                                final newUser = UserModelSql(
-                                  nama: namaController.text,
-                                  email: emailController.text,
-                                  telepon: teleponController.text,
-                                  password: passwordController.text,
-                                  role: widget.isPedagang
-                                      ? 'pedagang'
-                                      : 'pembeli',
-                                  namaToko: widget.isPedagang
-                                      ? namaTokoController.text
-                                      : null,
-                                  jenisProduk: widget.isPedagang
-                                      ? jenisProduk
-                                      : null,
-                                  namaMakanan: widget.isPedagang
-                                      ? namaMakananController.text
-                                      : null,
-                                );
+                              const SizedBox(height: 32),
+                              SizedBox(
+                                width: double.infinity,
+                                height: 48,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFF5A623),
+                                    foregroundColor: const Color(0xFF1C1C1E),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    elevation: 0,
+                                  ),
+                                  onPressed: () async {
+                                    if (_formKey.currentState!.validate()) {
+                                      final newUser = UserModelSql(
+                                        nama: namaController.text,
+                                        email: emailController.text,
+                                        telepon: teleponController.text,
+                                        password: passwordController.text,
+                                        role: widget.isPedagang ? 'pedagang' : 'pembeli',
+                                        namaToko: widget.isPedagang ? namaTokoController.text : null,
+                                        jenisProduk: widget.isPedagang ? jenisProduk : null,
+                                        namaMakanan: widget.isPedagang ? namaMakananController.text : null,
+                                      );
 
-                                bool success = await DBHelper().registerUser(
-                                  newUser,
-                                );
-                                if (success) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Pendaftaran berhasil! Silakan masuk.",
-                                      ),
+                                      final scaffoldMessenger = ScaffoldMessenger.of(context);
+                                      final navigator = Navigator.of(context);
+
+                                      bool success = await DBHelper().registerUser(newUser);
+
+                                      if (success) {
+                                        scaffoldMessenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text("Pendaftaran berhasil! Silakan masuk."),
+                                          ),
+                                        );
+                                        navigator.pop();
+                                      } else {
+                                        scaffoldMessenger.showSnackBar(
+                                          const SnackBar(
+                                            content: Text("Pendaftaran gagal. Email mungkin sudah terdaftar."),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  },
+                                  child: const Text(
+                                    "Daftar",
+                                    style: TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Plus Jakarta Sans',
                                     ),
-                                  );
-                                  Navigator.pop(context);
-                                } else {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        "Pendaftaran gagal. Email mungkin sudah terdaftar.",
-                                      ),
-                                    ),
-                                  );
-                                }
-                              }
-                            },
-                            child: Text(
-                              "Daftar",
-                              style: TextStyle(
-                                color: Color(0xFF1C1C1E),
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                                  ),
+                                ),
                               ),
-                            ),
+                            ],
                           ),
                         ),
                       ],
                     ),
                   ),
-                ],
+                ),
               ),
-            ),
+            ],
           ),
-        ],
-      ),
+        );
+      },
     );
   }
 
@@ -241,30 +322,60 @@ class _RegisterPageState extends State<RegisterPage> {
     required TextEditingController controller,
     required String hint,
     required IconData icon,
+    required Color fillColor,
+    required Color borderColor,
+    required Color textColor,
+    required bool isDark,
     bool obscureText = false,
     TextInputType keyboardType = TextInputType.text,
     String? Function(String?)? validator,
   }) {
     return TextFormField(
       controller: controller,
-      style: TextStyle(color: Colors.white),
+      style: TextStyle(
+        color: textColor,
+        fontSize: 14,
+        fontFamily: 'Plus Jakarta Sans',
+      ),
       obscureText: obscureText,
       keyboardType: keyboardType,
       decoration: InputDecoration(
         hintText: hint,
-        hintStyle: TextStyle(color: Color(0xFFffffff)),
-        focusedBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFFFfffff)),
-          borderRadius: BorderRadius.circular(8),
+        hintStyle: TextStyle(
+          color: isDark ? const Color(0xFF5A5A5C) : const Color(0xFF9E9E9E),
+          fontSize: 14,
+          fontFamily: 'Plus Jakarta Sans',
+        ),
+        filled: true,
+        fillColor: fillColor,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
         ),
         enabledBorder: OutlineInputBorder(
-          borderSide: BorderSide(color: Color(0xFFFfffff)),
-          borderRadius: BorderRadius.circular(8),
+          borderRadius: BorderRadius.circular(12),
+          borderSide: BorderSide(color: borderColor),
         ),
-        prefixIcon: Icon(icon, color: Color(0xFFffffff)),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Color(0xFFF5A623), width: 1.5),
+        ),
+        errorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent),
+        ),
+        focusedErrorBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(12),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
+        ),
+        prefixIcon: Icon(
+          icon,
+          color: isDark ? const Color(0xFF7A7A7C) : const Color(0xFF9E9E9E),
+          size: 20,
+        ),
       ),
-      validator:
-          validator ??
+      validator: validator ??
           (value) {
             if (value == null || value.isEmpty) {
               return "$hint tidak boleh kosong";

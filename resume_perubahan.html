@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Resume Perubahan UI & Tema - ASONGAN App</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-dark: #121214;
+            --card-dark: #1c1c1e;
+            --text-dark: #f3f4f6;
+            --text-muted-dark: #9ca3af;
+            --primary: #f5a623;
+            --primary-hover: #e09216;
+            --border-dark: #2e2e33;
+            
+            --bg-light: #f8f9fa;
+            --card-light: #ffffff;
+            --text-light: #1c1c1e;
+            --text-muted-light: #6b7280;
+            --border-light: #e5e7eb;
+            
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body.dark-mode {
+            --bg: var(--bg-dark);
+            --card: var(--card-dark);
+            --text: var(--text-dark);
+            --text-muted: var(--text-muted-dark);
+            --border: var(--border-dark);
+            background-color: var(--bg-dark);
+            color: var(--text-dark);
+        }
+
+        body.light-mode {
+            --bg: var(--bg-light);
+            --card: var(--card-light);
+            --text: var(--text-light);
+            --text-muted: var(--text-muted-light);
+            --border: var(--border-light);
+            background-color: var(--bg-light);
+            color: var(--text-light);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            transition: var(--transition);
+            min-height: 100vh;
+            line-height: 1.6;
+        }
+
+        header {
+            border-bottom: 1px solid var(--border);
+            padding: 2rem 5%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: var(--card);
+            position: sticky;
+            top: 0;
+            z-index: 100;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.05);
+            transition: var(--transition);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .logo-box {
+            width: 42px;
+            height: 42px;
+            background-color: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: 800;
+            color: #1c1c1e;
+            font-size: 1.5rem;
+            box-shadow: 0 4px 10px rgba(245, 166, 35, 0.3);
+        }
+
+        .logo-title h1 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+        }
+
+        .logo-title p {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+        }
+
+        .theme-toggle {
+            background: var(--bg);
+            border: 1px solid var(--border);
+            color: var(--text);
+            padding: 0.6rem 1.2rem;
+            border-radius: 20px;
+            cursor: pointer;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            font-size: 0.9rem;
+            transition: var(--transition);
+        }
+
+        .theme-toggle:hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
+        main {
+            max-width: 1200px;
+            margin: 2rem auto;
+            padding: 0 2rem;
+        }
+
+        .hero {
+            background: linear-gradient(135deg, rgba(245, 166, 35, 0.1) 0%, rgba(245, 166, 35, 0.02) 100%);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2.5rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 30px rgba(0,0,0,0.02);
+        }
+
+        .hero h2 {
+            font-size: 2rem;
+            font-weight: 800;
+            margin-bottom: 1rem;
+            letter-spacing: -0.5px;
+            background: linear-gradient(90deg, var(--text) 0%, var(--primary) 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .hero p {
+            color: var(--text-muted);
+            max-width: 800px;
+            font-size: 1.05rem;
+        }
+
+        .grid-summary {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 1.5rem;
+            margin-bottom: 3rem;
+        }
+
+        .summary-card {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 1.8rem;
+            transition: var(--transition);
+            box-shadow: 0 4px 15px rgba(0,0,0,0.01);
+        }
+
+        .summary-card:hover {
+            transform: translateY(-5px);
+            border-color: var(--primary);
+            box-shadow: 0 8px 25px rgba(245, 166, 35, 0.05);
+        }
+
+        .summary-card h3 {
+            font-size: 1.2rem;
+            font-weight: 700;
+            margin-bottom: 0.8rem;
+            display: flex;
+            align-items: center;
+            gap: 0.8rem;
+        }
+
+        .summary-card .icon-wrapper {
+            background-color: rgba(245, 166, 35, 0.15);
+            color: var(--primary);
+            width: 32px;
+            height: 32px;
+            border-radius: 8px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-weight: bold;
+        }
+
+        .summary-card p {
+            color: var(--text-muted);
+            font-size: 0.95rem;
+        }
+
+        .section-title {
+            font-size: 1.6rem;
+            font-weight: 800;
+            margin-bottom: 1.5rem;
+            border-left: 4px solid var(--primary);
+            padding-left: 1rem;
+            letter-spacing: -0.5px;
+        }
+
+        .detail-block {
+            background-color: var(--card);
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 2rem;
+            margin-bottom: 2.5rem;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.01);
+        }
+
+        .detail-block h3 {
+            font-size: 1.3rem;
+            font-weight: 700;
+            margin-bottom: 1.5rem;
+            padding-bottom: 0.8rem;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .detail-block h3 .file-badge {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            background-color: rgba(245, 166, 35, 0.1);
+            color: var(--primary);
+            padding: 0.3rem 0.8rem;
+            border-radius: 6px;
+            border: 1px solid rgba(245, 166, 35, 0.2);
+        }
+
+        .list-changes {
+            list-style-type: none;
+        }
+
+        .list-changes li {
+            position: relative;
+            padding-left: 1.8rem;
+            margin-bottom: 1.2rem;
+            font-size: 0.98rem;
+        }
+
+        .list-changes li::before {
+            content: "✓";
+            position: absolute;
+            left: 0;
+            top: 2px;
+            color: var(--primary);
+            font-weight: 900;
+            font-size: 1.1rem;
+        }
+
+        .tech-box {
+            background-color: var(--bg);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 1rem;
+            margin-top: 1rem;
+        }
+
+        .tech-box h4 {
+            font-size: 0.9rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+            color: var(--primary);
+        }
+
+        .tech-box pre {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.85rem;
+            overflow-x: auto;
+            white-space: pre-wrap;
+            word-break: break-all;
+            color: var(--text);
+        }
+
+        .badge-crud {
+            background-color: #10b981;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .badge-ui {
+            background-color: #3b82f6;
+            color: white;
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 0.2rem 0.6rem;
+            border-radius: 20px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        footer {
+            text-align: center;
+            padding: 3rem 0;
+            border-top: 1px solid var(--border);
+            color: var(--text-muted);
+            font-size: 0.9rem;
+            background-color: var(--card);
+            margin-top: 4rem;
+        }
+
+        .footer-logo {
+            font-weight: 800;
+            color: var(--text);
+            margin-bottom: 0.5rem;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 0.5rem;
+        }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <header>
+        <div class="logo-section">
+            <div class="logo-box">A</div>
+            <div class="logo-title">
+                <h1>ASONGAN</h1>
+                <p>Laporan Perubahan & Optimasi Codebase</p>
+            </div>
+        </div>
+        <button class="theme-toggle" id="themeBtn" onclick="toggleTheme()">
+            <span id="themeText">☀️ Mode Terang</span>
+        </button>
+    </header>
+
+    <main>
+        <section class="hero">
+            <h2>Laporan Teknis Redesign & Sistem Tema</h2>
+            <p>Dokumen ini merangkum seluruh perombakan antarmuka (UI) pada halaman Login, Explore, dan Bottom Navigation Bar sesuai rancangan mockup desain terbaru. Perubahan ini diimplementasikan secara modular dengan menjaga orisinalitas proses bisnis (CRUD) database dan API yang telah Anda bangun sebelumnya.</p>
+        </section>
+
+        <h2 class="section-title">Ringkasan Modul Perubahan</h2>
+        <section class="grid-summary">
+            <div class="summary-card">
+                <h3><div class="icon-wrapper">T</div>Sistem Tema Global</h3>
+                <p>Penyediaan pengendali tema terpusat (ValueNotifier) yang memungkinkan perpindahan mode gelap dan mode terang (Dark/Light Mode) secara real-time pada seluruh halaman.</p>
+            </div>
+            <div class="summary-card">
+                <h3><div class="icon-wrapper">L</div>Login Page Redesign</h3>
+                <p>Modernisasi pemilih role (pembeli/pedagang), form input, warna tombol masuk, dan transisi modal card dengan tetap mempertahankan CRUD login SQLite/SharedPrefs.</p>
+            </div>
+            <div class="summary-card">
+                <h3><div class="icon-wrapper">E</div>Explore Page Redesign</h3>
+                <p>Mengubah layout searchbar dan filter chips agar melayang di atas peta, membuat penunjuk lokasi speech-bubble kustom, serta memperbarui sliding pedagang aktif.</p>
+            </div>
+            <div class="summary-card">
+                <h3><div class="icon-wrapper">N</div>Bottom Nav Capsule</h3>
+                <p>Mengganti BottomNavigationBar default dengan kontainer kustom berdesain kapsul melengkung premium, berlatar belakang adaptif, dan aktif menonjolkan teks.</p>
+            </div>
+        </section>
+
+        <h2 class="section-title">Detail Teknis File yang Diubah</h2>
+
+        <!-- MAIN.DART -->
+        <div class="detail-block">
+            <h3>Tema Terpusat <span class="file-badge">lib/main.dart</span></h3>
+            <ul class="list-changes">
+                <li><strong>ValueNotifier & ValueListenableBuilder:</strong> Menginisialisasi variabel status global <code>isDarkModeNotifier = ValueNotifier&lt;bool&gt;(false)</code>.</li>
+                <li><strong>MaterialApp Rebuild:</strong> Membungkus <code>MaterialApp</code> dengan builder yang mendengarkan perubahan status notifier tersebut, sehingga dapat menyetel kecerahan sistem (<code>brightness</code>) dan warna latar belakang scaffold secara real-time tanpa memerlukan framework state management berat.</li>
+            </ul>
+            <div class="tech-box">
+                <h4>Struktur Teknis Notifier</h4>
+                <pre>final ValueNotifier&lt;bool&gt; isDarkModeNotifier = ValueNotifier&lt;bool&gt;(false);
+
+// di dalam MyApp.build
+return ValueListenableBuilder&lt;bool&gt;(
+  valueListenable: isDarkModeNotifier,
+  builder: (context, isDark, child) {
+    return MaterialApp(
+      theme: ThemeData(
+        brightness: isDark ? Brightness.dark : Brightness.light,
+        scaffoldBackgroundColor: isDark ? const Color(0xFF1C1C1E) : Colors.white,
+      ),
+      home: const SplashScreen(),
+    );
+  }
+);</pre>
+            </div>
+        </div>
+
+        <!-- LOGIN_SCREEN.DART -->
+        <div class="detail-block">
+            <h3>Halaman Login Baru & CRUD Aman <span class="file-badge">lib/features/auth/presentation/pages/login_screen.dart</span> <span class="badge-crud">CRUD Aman</span></h3>
+            <ul class="list-changes">
+                <li><strong>Pemilih Pilihan (Role Toggle):</strong> Mengubah area pemilih peran "Pembeli" atau "Pedagang" menjadi pill slider rounded dengan tinggi 44 dan padding 4. Saat dipilih, warna berpindah secara halus menggunakan <code>AnimatedContainer</code>.</li>
+                <li><strong>Text Field Moderen:</strong> Bidang input teks (Nomor Telepon/Email & Kata Sandi) kini memiliki latar belakang lebih pekat (Gelap: <code>#1C1C1E</code>, Terang: <code>#F1F5F9</code>) dengan fokus border oranye <code>#F5A623</code>.</li>
+                <li><strong>Kejernihan Ikon Vektor (SVG):</strong> Mengganti penanda logo media sosial statis (Google & Facebook) dengan markup SVG murni melalui <code>SvgPicture.string</code>. Google kini menggunakan warna orisinal brand (Multi-colored G), sedangkan Facebook menggunakan ikon 'f' putih pada latar adaptif.</li>
+                <li><strong>Tombol Masuk:</strong> Memperbaiki kontras teks tombol "Masuk" dengan menyetel warna teks menjadi gelap (<code>#1C1C1E</code>) di atas warna oranye utama <code>#F5A623</code> sesuai mockup.</li>
+                <li><strong>Keamanan CRUD (SANGAT PENTING):</strong> Fungsi pemicu login <code>_handleLogin()</code> dan penyimpanan sesi <code>AuthService.saveUserSession(result)</code> sama sekali tidak disentuh untuk menjaga kelancaran proses otentikasi database lokal SQLite.</li>
+            </ul>
+            <div class="tech-box">
+                <h4>Detail Kode CRUD yang Dipertahankan</h4>
+                <pre>// Data & SQLite CRUD tidak berubah:
+final user = UserModelSql(
+  email: emailController.text,
+  password: passwordController.text,
+);
+final result = await DBHelper().loginUser(user);
+if (result != null) {
+  // Pengecekan role dan sesi
+  await AuthService.saveUserSession(result);
+  Navigator.pushReplacement(...);
+}</pre>
+            </div>
+        </div>
+
+        <!-- EXPLORE_SCREEN.DART -->
+        <div class="detail-block">
+            <h3>Optimasi Layout Peta & Detail <span class="file-badge">lib/features/auth/presentation/pages/explore_screen.dart</span> <span class="badge-ui">Struktur Baru</span></h3>
+            <ul class="list-changes">
+                <li><strong>Penumpukan Objek (Stacking):</strong> Agar sesuai mockup di mana garis-garis grid peta mengalir di bawah bilah pencarian dan filter chips, kami mengeluarkan searchbar dan chips dari <code>Column</code> luar. Komponen tersebut diletakkan di dalam <code>Stack</code> milik <code>_buildMapArea</code>, ditata menggunakan widget <code>Positioned</code> di posisi teratas.</li>
+                <li><strong>Searchbar Melayang:</strong> Didesain ulang dengan latar putih (terang) / abu pekat (gelap), bergaris oranye tegas dengan ketebalan 1.5, serta dilengkapi efek bayangan (shadow) halus untuk memberikan kesan melayang di atas peta.</li>
+                <li><strong>Tombol Pengalih Tema di AppBar:</strong> Menyisipkan <code>IconButton</code> ganti tema dengan ikon Matahari/Bulan dinamis pada deretan kanan AppBar untuk mengubah status <code>isDarkModeNotifier</code> secara instan.</li>
+                <li><strong>Speech Bubble Markers:</strong> Mengubah pin penanda pedagang yang sebelumnya standar menjadi bentuk balon dialog (Speech Bubble). Dibuat menggunakan paduan kontainer bersudut tumpul (capsule) dan ikon segitiga <code>Icons.arrow_drop_down_rounded</code> di bagian bawah tengah kontainer. Penanda "Nasi Uduk" diberi warna abu-abu (tidak aktif), sementara yang lain diberi warna oranye (aktif).</li>
+                <li><strong>Bilah Geser Pedagang (Sliding Panel):</strong> Latar belakang panel diubah menjadi putih bersih (Light Mode) dan abu gelap (Dark Mode). Bagian pegangan atas (drag handle) diberi warna abu terang <code>#E2E8F0</code>.</li>
+                <li><strong>Kartu Pedagang Berindikator Aktif:</strong> Latar belakang kartu pedagang dibuat adaptif. Di bagian foto profil (avatar), dipasangi badge lingkaran kecil berwarna hijau terang (<code>#4CD964</code>) yang diposisikan di sudut kanan bawah menggunakan <code>Stack</code> untuk menunjukkan status online.</li>
+            </ul>
+            <div class="tech-box">
+                <h4>Skema Overlay Stack</h4>
+                <pre>return Stack(
+  children: [
+    // Layer 1: Peta (Garis-garis grid & Gambar peta jakarta)
+    Positioned.fill(child: _buildMapBackground()),
+    
+    // Layer 2: Penanda pedagang (Speech Bubble)
+    _buildMapMarker(...),
+    
+    // Layer 3: Kontrol melayang di atas peta
+    Positioned(
+      top: 0, left: 0, right: 0,
+      child: Column(
+        children: [
+          _buildSearchBar(isDark),
+          _buildFilterChips(isDark),
+        ],
+      ),
+    ),
+  ],
+);</pre>
+            </div>
+        </div>
+
+        <!-- MAIN_WRAPPER.DART -->
+        <div class="detail-block">
+            <h3>Navigasi Kapsul Premium <span class="file-badge">lib/features/auth/presentation/pages/wrapper/main_wrapper.dart</span></h3>
+            <ul class="list-changes">
+                <li><strong>Bottom Nav Kustom:</strong> Alih-alih menggunakan widget bawaan Flutter yang kaku, kami merancang bar navigasi horizontal sendiri menggunakan <code>Container</code> bertinggi 64.</li>
+                <li><strong>Desain Kapsul Aktif:</strong> Ketika sebuah tab (misalnya: Explore) dipilih, ia akan dibungkus oleh kontainer kapsul melengkung dengan latar belakang oranye penuh (<code>#F5A623</code>) dan mengubah ikon serta teksnya menjadi putih bersih.</li>
+                <li><strong>Tab Tidak Aktif:</strong> Hanya menampilkan ikon bergaris tipis dan teks dengan warna abu pudar (<code>Colors.white54</code> atau <code>#7A7A7C</code>), menciptakan kontras visual yang menonjol dan estetik tinggi.</li>
+            </ul>
+            <div class="tech-box">
+                <h4>Detail Rendering Tab Aktif Kapsul</h4>
+                <pre>Widget _buildNavItem(int index, String label, IconData activeIcon, IconData inactiveIcon, bool isDark) {
+  final bool isSelected = _currentIndex == index;
+  return Container(
+    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+    decoration: BoxDecoration(
+      color: isSelected ? const Color(0xFFF5A623) : Colors.transparent,
+      borderRadius: BorderRadius.circular(12),
+    ),
+    child: Column(
+      children: [
+        Icon(isSelected ? activeIcon : inactiveIcon, color: isSelected ? Colors.white : inactiveColor),
+        Text(label, style: TextStyle(color: isSelected ? Colors.white : inactiveColor)),
+      ],
+    ),
+  );
+}</pre>
+            </div>
+        </div>
+    </main>
+
+    <footer>
+        <div class="footer-logo">
+            <div class="logo-box" style="width: 24px; height: 24px; font-size: 0.9rem; border-radius: 5px;">A</div>
+            ASONGAN App Redesign
+        </div>
+        <p>Laporan teknis ini di-generate secara otomatis setelah pengujian kode dinyatakan sukses 100% (Zero Lint Issues).</p>
+    </footer>
+
+    <script>
+        function toggleTheme() {
+            const body = document.body;
+            const btn = document.getElementById('themeBtn');
+            const text = document.getElementById('themeText');
+            
+            if (body.classList.contains('dark-mode')) {
+                body.classList.remove('dark-mode');
+                body.classList.add('light-mode');
+                text.innerText = '🌙 Mode Gelap';
+            } else {
+                body.classList.remove('light-mode');
+                body.classList.add('dark-mode');
+                text.innerText = '☀️ Mode Terang';
+            }
+        }
+    </script>
+</body>
+</html>
