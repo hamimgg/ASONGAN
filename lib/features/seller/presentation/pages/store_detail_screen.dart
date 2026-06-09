@@ -1,11 +1,102 @@
 import 'package:asongan_app/core/theme/app_colors.dart';
-import 'package:asongan_app/core/widgets/asongan_app_bar.dart';
+import 'package:asongan_app/features/auth/data/auth_service.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
+import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/seller/model/store_summary_model.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/flutter_svg.dart';
 
-class StoreDetailScreen extends StatelessWidget {
+class StoreDetailScreen extends StatefulWidget {
   const StoreDetailScreen({super.key});
+
+  @override
+  State<StoreDetailScreen> createState() => _StoreDetailScreenState();
+}
+
+class _StoreDetailScreenState extends State<StoreDetailScreen> {
+  UserModelSql? _currentUser;
+  bool _isLoading = true;
+
+  // Form states
+  bool _statusJualan = true;
+  final TextEditingController _jamController = TextEditingController();
+  final TextEditingController _lokasiController = TextEditingController();
+
+  @override
+  void initState() {
+    super.initState();
+    _loadStoreDetails();
+  }
+
+  @override
+  void dispose() {
+    _jamController.dispose();
+    _lokasiController.dispose();
+    super.dispose();
+  }
+
+  Future<void> _loadStoreDetails() async {
+    final user = await AuthService.getUserSession();
+    if (user != null && user.id != null) {
+      final latestUser = await DBHelper().getUserById(user.id!);
+      if (latestUser != null) {
+        setState(() {
+          _currentUser = latestUser;
+          _statusJualan = latestUser.statusJualan ?? true;
+          _jamController.text = latestUser.jamOperasional ?? '';
+          _lokasiController.text = latestUser.lokasi ?? '';
+          _isLoading = false;
+        });
+        return;
+      }
+    }
+    setState(() {
+      _isLoading = false;
+    });
+  }
+
+  Future<void> _saveSettings() async {
+    if (_currentUser == null) return;
+    
+    final updatedUser = UserModelSql(
+      id: _currentUser!.id,
+      email: _currentUser!.email,
+      password: _currentUser!.password,
+      telepon: _currentUser!.telepon,
+      nama: _currentUser!.nama,
+      role: _currentUser!.role,
+      namaToko: _currentUser!.namaToko,
+      jenisProduk: _currentUser!.jenisProduk,
+      namaMakanan: _currentUser!.namaMakanan,
+      statusJualan: _statusJualan,
+      jamOperasional: _jamController.text,
+      lokasi: _lokasiController.text,
+    );
+
+    final success = await DBHelper().updateUser(updatedUser);
+    if (success) {
+      await AuthService.saveUserSession(updatedUser);
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Pengaturan toko berhasil disimpan!'),
+            backgroundColor: Color(0xFF4CD964),
+          ),
+        );
+      }
+      _loadStoreDetails();
+    } else {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Gagal menyimpan pengaturan toko'),
+            backgroundColor: Color(0xFFFF3B30),
+          ),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -16,73 +107,315 @@ class StoreDetailScreen extends StatelessWidget {
         final Color cardBg = AppColors.cardBg(isDark);
         final Color cardBorder = AppColors.cardBorder(isDark);
         final Color textColor = AppColors.textPrimary(isDark);
-        
-        // Menggunakan data dummy yang sama dari model
+        final Color subtitleColor = AppColors.textSubtitle(isDark);
+        final Color inputFill = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9);
+        final Color inputBorder = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
+
         final data = dummyStoreSummary;
 
         return Scaffold(
           backgroundColor: scaffoldBg,
-          appBar: PreferredSize(
-            preferredSize: const Size.fromHeight(80),
-            child: AsonganAppBar(
-              title: "Detail Toko",
-              isDark: isDark,
-              showThemeToggle: true,
-            ),
-          ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                _buildSectionHeader(
-                  "Menu Terlaris", 
-                  Icons.local_fire_department_rounded, 
-                  textColor,
-                ),
-                const SizedBox(height: 12),
-                _buildListCard(
-                  items: data.bestSellingMenu,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  textColor: textColor,
-                  icon: Icons.star_rounded,
-                  iconColor: AppColors.accent,
-                ),
-                const SizedBox(height: 24),
-                _buildSectionHeader(
-                  "Stok Menipis", 
-                  Icons.warning_amber_rounded, 
-                  textColor,
-                ),
-                const SizedBox(height: 12),
-                _buildListCard(
-                  items: data.lowStockMenu,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  textColor: textColor,
-                  icon: Icons.error_outline_rounded,
-                  iconColor: AppColors.statusClosed,
-                ),
-              ],
-            ),
+          body: Column(
+            children: [
+              _buildAppBar(context, isDark),
+              Expanded(
+                child: _isLoading
+                    ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                    : SingleChildScrollView(
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            // Card Pengaturan Toko (CRUD)
+                            _buildSettingsCard(isDark, cardBg, cardBorder, textColor, subtitleColor, inputFill, inputBorder),
+                            const SizedBox(height: 24),
+                            
+                            // Menu Terlaris
+                            _buildSectionHeader(
+                              "Menu Terlaris",
+                              Icons.local_fire_department_rounded,
+                              textColor,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildListCard(
+                              items: data.bestSellingMenu,
+                              cardBg: cardBg,
+                              cardBorder: cardBorder,
+                              textColor: textColor,
+                              icon: Icons.star_rounded,
+                              iconColor: AppColors.accent,
+                            ),
+                            const SizedBox(height: 24),
+                            
+                            // Stok Menipis
+                            _buildSectionHeader(
+                              "Stok Menipis",
+                              Icons.warning_amber_rounded,
+                              textColor,
+                            ),
+                            const SizedBox(height: 12),
+                            _buildListCard(
+                              items: data.lowStockMenu,
+                              cardBg: cardBg,
+                              cardBorder: cardBorder,
+                              textColor: textColor,
+                              icon: Icons.error_outline_rounded,
+                              iconColor: AppColors.statusClosed,
+                            ),
+                          ],
+                        ),
+                      ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
+  Widget _buildSettingsCard(
+    bool isDark,
+    Color cardBg,
+    Color cardBorder,
+    Color textColor,
+    Color subtitleColor,
+    Color inputFill,
+    Color inputBorder,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: cardBg,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: cardBorder),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.store_rounded, color: AppColors.accent, size: 22),
+              const SizedBox(width: 8),
+              Text(
+                "Pengaturan Toko",
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ],
+          ),
+          const Divider(height: 24),
+          
+          // Switch Status Jualan
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    "Status Jualan",
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.circle,
+                        color: _statusJualan ? const Color(0xFF4CD964) : const Color(0xFFFF3B30),
+                        size: 10,
+                      ),
+                      const SizedBox(width: 6),
+                      Text(
+                        _statusJualan ? "Sedang Berjualan" : "Tutup",
+                        style: TextStyle(
+                          color: subtitleColor,
+                          fontSize: 12,
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              Switch(
+                value: _statusJualan,
+                activeThumbColor: const Color(0xFF4CD964),
+                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                inactiveThumbColor: const Color(0xFFFF3B30),
+                inactiveTrackColor: const Color(0xFFFF3B30).withValues(alpha: 0.3),
+                onChanged: (val) {
+                  setState(() => _statusJualan = val);
+                },
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+
+          // Jam Operasional
+          Text(
+            "Jam Operasional",
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _jamController,
+            style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+            decoration: InputDecoration(
+              hintText: "Contoh: 17:00 - 23:00",
+              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
+              filled: true,
+              fillColor: inputFill,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          // Lokasi Saat Ini
+          Text(
+            "Lokasi Saat Ini",
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _lokasiController,
+            enabled: false,
+            style: TextStyle(color: textColor.withValues(alpha: 0.5), fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+            decoration: InputDecoration(
+              hintText: "Lokasi GPS belum aktif",
+              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.4), fontSize: 14),
+              filled: true,
+              fillColor: inputFill.withValues(alpha: 0.5),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder.withValues(alpha: 0.5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+
+          // Tombol Simpan
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: ElevatedButton(
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.accent,
+                foregroundColor: AppColors.accentDark,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                elevation: 0,
+              ),
+              onPressed: _saveSettings,
+              child: const Text(
+                "Simpan Pengaturan",
+                style: TextStyle(
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildAppBar(BuildContext context, bool isDark) {
+    final Color bgColor = isDark ? const Color(0xFF1C1C1E) : Colors.white;
+    final Color iconColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+
+    return Container(
+      color: bgColor,
+      padding: EdgeInsets.only(
+        top: MediaQuery.of(context).padding.top + 12,
+        left: 12,
+        right: 12,
+        bottom: 12,
+      ),
+      child: Row(
+        children: [
+          SvgPicture.asset(
+            "assets/images/logo_asongan.svg",
+            width: 32,
+            height: 32,
+            semanticsLabel: "logo asongan",
+          ),
+          const SizedBox(width: 10),
+          Text(
+            'Detail Toko',
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 17,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          const Spacer(),
+          IconButton(
+            onPressed: () {},
+            icon: Icon(
+              Icons.notifications_none_rounded,
+              color: iconColor,
+              size: 22,
+            ),
+          ),
+          IconButton(
+            onPressed: () => Scaffold.of(context).openEndDrawer(),
+            icon: Icon(Icons.menu_rounded, color: iconColor, size: 22),
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _buildSectionHeader(String title, IconData icon, Color textColor) {
     return Row(
       children: [
-        Icon(icon, color: AppColors.accent, size: 24),
+        Icon(icon, color: AppColors.accent, size: 22),
         const SizedBox(width: 8),
         Text(
           title,
           style: TextStyle(
             color: textColor,
-            fontSize: 18,
-            fontWeight: bold,
+            fontSize: 15,
+            fontWeight: FontWeight.bold,
             fontFamily: 'Plus Jakarta Sans',
           ),
         ),
@@ -106,11 +439,11 @@ class StoreDetailScreen extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           border: Border.all(color: cardBorder),
         ),
-        child: Center(
+        child: const Center(
           child: Text(
             "Tidak ada data.",
             style: TextStyle(
-              color: AppColors.textSubtitle(false), // fallback
+              color: Color(0xFF7A7A7C),
               fontFamily: 'Plus Jakarta Sans',
             ),
           ),
@@ -128,18 +461,15 @@ class StoreDetailScreen extends StatelessWidget {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (context, index) => Divider(
-          color: cardBorder,
-          height: 1,
-        ),
+        separatorBuilder: (context, index) => Divider(color: cardBorder, height: 1),
         itemBuilder: (context, index) {
           return ListTile(
-            leading: Icon(icon, color: iconColor, size: 20),
+            leading: Icon(icon, color: iconColor, size: 18),
             title: Text(
               items[index],
               style: TextStyle(
                 color: textColor,
-                fontSize: 15,
+                fontSize: 14,
                 fontFamily: 'Plus Jakarta Sans',
               ),
             ),
@@ -149,6 +479,3 @@ class StoreDetailScreen extends StatelessWidget {
     );
   }
 }
-
-// Local variable needed because FontWeight.bold isn't imported from basic dart
-const bold = FontWeight.bold;

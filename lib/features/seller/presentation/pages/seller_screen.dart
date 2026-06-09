@@ -1,3 +1,5 @@
+import 'dart:io';
+import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
@@ -6,6 +8,7 @@ import 'package:asongan_app/features/seller/presentation/widgets/product_form_bo
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:intl/intl.dart';
 
 class KelolaDagangan extends StatefulWidget {
   const KelolaDagangan({super.key});
@@ -15,10 +18,15 @@ class KelolaDagangan extends StatefulWidget {
 }
 
 class _KelolaDaganganState extends State<KelolaDagangan> {
-  // final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
   UserModelSql? _currentUser;
   List<ProductModelSql> _products = [];
   bool _isLoading = true;
+
+  final formatCurrency = NumberFormat.currency(
+    locale: 'id_ID',
+    symbol: 'Rp ',
+    decimalDigits: 0,
+  );
 
   @override
   void initState() {
@@ -59,64 +67,82 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
     );
   }
 
+  void _confirmDelete(ProductModelSql product, bool isDark) {
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: isDark ? const Color(0xFF2A2A2C) : Colors.white,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Hapus Produk",
+            style: TextStyle(
+              color: AppColors.textPrimary(isDark),
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          content: Text(
+            "Yakin ingin menghapus \"${product.namaProduk}\"?",
+            style: TextStyle(
+              color: AppColors.textSubtitle(isDark),
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Batal",
+                style: TextStyle(
+                  color: AppColors.textSubtitle(isDark),
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                if (product.id != null) {
+                  await DBHelper().deleteProduct(product.id!);
+                  _loadData();
+                }
+              },
+              child: const Text(
+                "Hapus",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
       valueListenable: isDarkModeNotifier,
       builder: (context, isDark, child) {
-        final Color scaffoldBg = isDark
-            ? const Color(0xFF1C1C1E)
-            : const Color(0xFFF8F9FA);
-        final Color appBg = isDark ? const Color(0xFF1C1C1E) : Colors.white;
-
-        final Color iconColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+        final Color scaffoldBg = AppColors.scaffoldBg(isDark);
 
         return Scaffold(
           backgroundColor: scaffoldBg,
-          // appBar: _buildAppBar(context, isDark),
-          // body: _buildTambahMenu(isDark),
           body: Column(
             children: [
               _buildAppBar(context, isDark),
-              Expanded(child: _buildTambahMenu(isDark)),
+              Expanded(child: _buildProductGrid(isDark)),
             ],
           ),
-          // appBar: AppBar(
-          //   backgroundColor: appBg,
-          //   // elevation: 0,
-          // title: Text(
-          //   "Kelola Dagangan",
-          //   style: TextStyle(
-          //     fontWeight: FontWeight.bold,
-          //     color: textColor,
-          //     fontSize: 17,
-          //     fontFamily: 'Plus Jakarta Sans',
-          //   ),
-          // ),
-          // actions: [
-          //   IconButton(
-          //     onPressed: () => Scaffold.of(context).openEndDrawer(),
-          //     icon: Icon(Icons.menu_rounded, color: iconColor),
-          //   ),
-          // ],
-          // bottom: PreferredSize(
-          //   preferredSize: const Size.fromHeight(1),
-          //   child: Container(
-          //     color: cardBorderColor,
-          //     height: 1,
-          //     padding: EdgeInsets.only(
-          //       top: MediaQuery.of(context).padding.top + 12,
-          //       left: 12,
-          //       right: 12,
-          //       bottom: 12,
-          //     ),
-          //   ),
-          // ),
-
-          // ),
           floatingActionButton: FloatingActionButton(
-            backgroundColor: const Color(0xFFF5A623),
-            foregroundColor: const Color(0xFF1C1C1E),
+            backgroundColor: AppColors.accent,
+            foregroundColor: AppColors.accentDark,
             onPressed: () => _showFormBottomSheet(isDark),
             child: const Icon(Icons.add_rounded),
           ),
@@ -125,130 +151,274 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
     );
   }
 
-  Widget _buildTambahMenu(bool isDark) {
-    // final Color chipBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
-    //     final Color chipBorderColor = isDark
-    //         ? const Color(0xFF3A3A3C)
-    //         : const Color(0xFFE2E8F0);
-    //     final Color inactiveTextColor = isDark
-    //         ? const Color(0xFF9A9A9A)
-    //         : const Color(0xFF7A7A7C);
-    final Color subtitleColor = isDark
-        ? const Color(0xFF9A9A9A)
-        : const Color(0xFF7A7A7C);
-    final Color cardBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
-    final Color cardBorderColor = isDark
-        ? const Color(0xFF3A3A3C)
-        : const Color(0xFFE2E8F0);
-    final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+  Widget _buildProductGrid(bool isDark) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      );
+    }
 
-    return _isLoading
-        ? const Center(
-            child: CircularProgressIndicator(color: Color(0xFFF5A623)),
-          )
-        : _products.isEmpty
-        ? Center(
-            child: Text(
+    if (_products.isEmpty) {
+      return Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              Icons.storefront_outlined,
+              size: 64,
+              color: AppColors.textSubtitle(isDark),
+            ),
+            const SizedBox(height: 16),
+            Text(
               "Belum ada produk.",
               style: TextStyle(
-                color: subtitleColor,
-                fontSize: 14,
+                color: AppColors.textSubtitle(isDark),
+                fontSize: 15,
                 fontFamily: 'Plus Jakarta Sans',
               ),
             ),
-          )
-        : ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-            itemCount: _products.length,
-            itemBuilder: (context, index) {
-              final p = _products[index];
-              return Card(
-                color: cardBg,
-                elevation: 0,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(16),
-                  side: BorderSide(color: cardBorderColor),
+            const SizedBox(height: 8),
+            Text(
+              "Tambahkan produk pertamamu!",
+              style: TextStyle(
+                color: AppColors.textSubtitle(isDark).withValues(alpha: 0.6),
+                fontSize: 13,
+                fontFamily: 'Plus Jakarta Sans',
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    return GridView.builder(
+      padding: const EdgeInsets.all(16),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.58,
+      ),
+      itemCount: _products.length,
+      itemBuilder: (context, index) {
+        final p = _products[index];
+        return _buildProductCard(p, isDark);
+      },
+    );
+  }
+
+  Widget _buildProductCard(ProductModelSql p, bool isDark) {
+    return Container(
+      decoration: BoxDecoration(
+        color: AppColors.cardBg(isDark),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: AppColors.cardBorder(isDark)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Foto Produk
+          Expanded(
+            flex: 4,
+            child: Stack(
+              children: [
+                Container(
+                  width: double.infinity,
+                  decoration: BoxDecoration(
+                    borderRadius: const BorderRadius.vertical(
+                      top: Radius.circular(15),
+                    ),
+                    color: AppColors.inputFill(isDark),
+                  ),
+                  child: p.imagePath.isNotEmpty
+                      ? ClipRRect(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          child: p.imagePath.startsWith('assets/')
+                              ? Image.asset(
+                                  p.imagePath,
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Center(
+                                      child: Icon(
+                                        Icons.fastfood_rounded,
+                                        color: AppColors.accent,
+                                        size: 36,
+                                      ),
+                                    );
+                                  },
+                                )
+                              : Image.file(
+                                  File(p.imagePath),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Center(
+                                      child: Icon(
+                                        Icons.fastfood_rounded,
+                                        color: AppColors.accent,
+                                        size: 36,
+                                      ),
+                                    );
+                                  },
+                                ),
+                        )
+                      : Center(
+                          child: Icon(
+                            Icons.fastfood_rounded,
+                            color: AppColors.accent,
+                            size: 36,
+                          ),
+                        ),
                 ),
-                margin: const EdgeInsets.only(bottom: 12),
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Row(
+                // Badge status
+                Positioned(
+                  top: 8,
+                  right: 8,
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
+                    decoration: BoxDecoration(
+                      color: p.isTersedia
+                          ? AppColors.statusActive
+                          : AppColors.statusClosed,
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Text(
+                      p.isTersedia ? "Tersedia" : "Habis",
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Info Produk
+          Expanded(
+            flex: 5,
+            child: Padding(
+              padding: const EdgeInsets.fromLTRB(12, 10, 12, 8),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Nama Produk
+                  Text(
+                    p.namaProduk,
+                    style: TextStyle(
+                      color: AppColors.textPrimary(isDark),
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                  ),
+                  const SizedBox(height: 4),
+                  // Harga
+                  Text(
+                    formatCurrency.format(p.harga),
+                    style: const TextStyle(
+                      color: AppColors.accent,
+                      fontSize: 14,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  // Stok
+                  Text(
+                    "Stok: ${p.stok}",
+                    style: TextStyle(
+                      color: AppColors.textSubtitle(isDark),
+                      fontSize: 12,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                  const Spacer(),
+                  // Tombol Edit & Hapus
+                  Row(
                     children: [
-                      Container(
-                        width: 48,
-                        height: 48,
-                        decoration: BoxDecoration(
-                          color: isDark
-                              ? const Color(0xFF1C1C1E)
-                              : const Color(0xFFF1F5F9),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: const Icon(
-                          Icons.fastfood_rounded,
-                          color: Color(0xFFF5A623),
-                          size: 24,
-                        ),
-                      ),
-                      const SizedBox(width: 12),
                       Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              p.namaProduk,
-                              style: TextStyle(
-                                color: textColor,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Plus Jakarta Sans',
-                              ),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
+                        child: InkWell(
+                          onTap: () => _showFormBottomSheet(
+                            isDark,
+                            productToEdit: p,
+                          ),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.blue.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            const SizedBox(height: 2),
-                            Text(
-                              "Rp ${p.harga.toStringAsFixed(0)}",
-                              style: const TextStyle(
-                                color: Color(0xFFF5A623),
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                                fontFamily: 'Plus Jakarta Sans',
-                              ),
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.edit_rounded,
+                                    color: Colors.blue, size: 14),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Edit",
+                                  style: TextStyle(
+                                    color: Colors.blue,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                ),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ),
-                      Row(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          IconButton(
-                            icon: const Icon(
-                              Icons.edit_rounded,
-                              color: Colors.blue,
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: InkWell(
+                          onTap: () => _confirmDelete(p, isDark),
+                          borderRadius: BorderRadius.circular(8),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(vertical: 6),
+                            decoration: BoxDecoration(
+                              color: Colors.red.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
                             ),
-                            onPressed: () =>
-                                _showFormBottomSheet(isDark, productToEdit: p),
-                          ),
-                          IconButton(
-                            icon: const Icon(
-                              Icons.delete_rounded,
-                              color: Colors.red,
+                            child: const Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.delete_rounded,
+                                    color: Colors.red, size: 14),
+                                SizedBox(width: 4),
+                                Text(
+                                  "Hapus",
+                                  style: TextStyle(
+                                    color: Colors.red,
+                                    fontSize: 12,
+                                    fontWeight: FontWeight.w600,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                ),
+                              ],
                             ),
-                            onPressed: () async {
-                              if (p.id != null) {
-                                await DBHelper().deleteProduct(p.id!);
-                                _loadData();
-                              }
-                            },
                           ),
-                        ],
+                        ),
                       ),
                     ],
                   ),
-                ),
-              );
-            },
-          );
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _buildAppBar(BuildContext context, bool isDark) {
@@ -266,7 +436,6 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
       ),
       child: Row(
         children: [
-          // SVG Logo
           SvgPicture.asset(
             "assets/images/logo_asongan.svg",
             width: 32,
@@ -274,7 +443,6 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
             semanticsLabel: "logo asongan",
           ),
           const SizedBox(width: 10),
-          // Title section
           Text(
             'Kelola Dagangan',
             style: TextStyle(
@@ -285,16 +453,6 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
             ),
           ),
           const Spacer(),
-          // IconButton(
-          //   onPressed: () {
-          //     isDarkModeNotifier.value = !isDarkModeNotifier.value;
-          //   },
-          //   icon: Icon(
-          //     isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-          //     color: iconColor,
-          //     size: 22,
-          //   ),
-          // ),
           IconButton(
             onPressed: () {},
             icon: Icon(

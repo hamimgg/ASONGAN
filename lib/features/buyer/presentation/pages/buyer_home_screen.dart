@@ -1,12 +1,37 @@
+import 'dart:io';
 import 'package:asongan_app/core/theme/app_colors.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:intl/intl.dart';
 
-class BuyerHomeScreen extends StatelessWidget {
+class BuyerHomeScreen extends StatefulWidget {
   const BuyerHomeScreen({super.key});
+
+  @override
+  State<BuyerHomeScreen> createState() => _BuyerHomeScreenState();
+}
+
+class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
+  List<ProductModelSql> _allProducts = [];
+  bool _isLoadingProducts = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProducts();
+  }
+
+  Future<void> _loadProducts() async {
+    final products = await DBHelper().getAllProducts();
+    setState(() {
+      _allProducts = products;
+      _isLoadingProducts = false;
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -67,7 +92,6 @@ class BuyerHomeScreen extends StatelessWidget {
       ),
       child: Row(
         children: [
-          // SVG Logo
           SvgPicture.asset(
             "assets/images/logo_asongan.svg",
             width: 32,
@@ -75,9 +99,8 @@ class BuyerHomeScreen extends StatelessWidget {
             semanticsLabel: "logo asongan",
           ),
           const SizedBox(width: 10),
-          // Title section
           Text(
-            'Temukan Pedagang',
+            'Beranda',
             style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.bold,
@@ -86,16 +109,6 @@ class BuyerHomeScreen extends StatelessWidget {
             ),
           ),
           const Spacer(),
-          // IconButton(
-          //   onPressed: () {
-          //     isDarkModeNotifier.value = !isDarkModeNotifier.value;
-          //   },
-          //   icon: Icon(
-          //     isDark ? Icons.light_mode_rounded : Icons.dark_mode_rounded,
-          //     color: iconColor,
-          //     size: 22,
-          //   ),
-          // ),
           IconButton(
             onPressed: () {},
             icon: Icon(
@@ -122,27 +135,13 @@ class BuyerHomeScreen extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(16),
           color: const Color(0xFF1C1C1E),
-          // Kalau ada gambar background banner bisa dimasukkan ke sini:
-          // image: const DecorationImage(
-          //   image: AssetImage('assets/images/banner_bg.jpg'),
-          //   fit: BoxFit.cover,
-          // ),
         ),
         child: Stack(
           children: [
-            // Overlay gradient if using background image
             ClipRRect(
               borderRadius: BorderRadius.circular(16),
               child: Container(
-                decoration: BoxDecoration(
-                  // gradient: LinearGradient(
-                  //   colors: [
-                  //     Colors.black.withValues(alpha: 0.8),
-                  //     Colors.black.withValues(alpha: 0.2),
-                  //   ],
-                  //   begin: Alignment.centerLeft,
-                  //   end: Alignment.centerRight,
-                  // ),
+                decoration: const BoxDecoration(
                   image: DecorationImage(
                     image: AssetImage("assets/images/tukang_bubur.png"),
                     fit: BoxFit.cover,
@@ -188,6 +187,7 @@ class BuyerHomeScreen extends StatelessWidget {
     String title,
     Color textColor, {
     bool hasSeeAll = false,
+    VoidCallback? onSeeAll,
   }) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -204,13 +204,16 @@ class BuyerHomeScreen extends StatelessWidget {
             ),
           ),
           if (hasSeeAll)
-            Text(
-              "Lihat Semua",
-              style: TextStyle(
-                color: AppColors.accent,
-                fontSize: 12,
-                fontWeight: FontWeight.w600,
-                fontFamily: 'Plus Jakarta Sans',
+            TextButton(
+              onPressed: onSeeAll,
+              child: const Text(
+                "Lihat Semua",
+                style: TextStyle(
+                  color: AppColors.accent,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
               ),
             ),
         ],
@@ -251,8 +254,10 @@ class BuyerHomeScreen extends StatelessWidget {
                           color: AppColors.inputFill(isDark),
                         ),
                         width: double.infinity,
-                        // Placeholder icon jika gambar tidak ditemukan
-                        child: Image.asset("assets/images/tukang_siomay.png"),
+                        child: Image.asset(
+                          "assets/images/tukang_siomay.png",
+                          fit: BoxFit.cover,
+                        ),
                       ),
                       if (seller.isSelling)
                         Positioned(
@@ -267,9 +272,9 @@ class BuyerHomeScreen extends StatelessWidget {
                               color: AppColors.statusActive,
                               borderRadius: BorderRadius.circular(12),
                             ),
-                            child: Row(
+                            child: const Row(
                               mainAxisSize: MainAxisSize.min,
-                              children: const [
+                              children: [
                                 Icon(
                                   Icons.circle,
                                   color: Colors.white,
@@ -374,6 +379,182 @@ class BuyerHomeScreen extends StatelessWidget {
       decimalDigits: 0,
     );
 
+    // Gabungkan data dari DB + dummy data sebagai fallback
+    final bool hasDbProducts = _allProducts.isNotEmpty;
+
+    if (_isLoadingProducts) {
+      return const Padding(
+        padding: EdgeInsets.all(32),
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
+      );
+    }
+
+    if (hasDbProducts) {
+      // Tampilkan produk dari database
+      return GridView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        shrinkWrap: true,
+        physics: const NeverScrollableScrollPhysics(),
+        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+          crossAxisCount: 2,
+          mainAxisSpacing: 16,
+          crossAxisSpacing: 16,
+          childAspectRatio: 0.75,
+        ),
+        itemCount: _allProducts.length,
+        itemBuilder: (context, index) {
+          final product = _allProducts[index];
+          return Container(
+            decoration: BoxDecoration(
+              color: AppColors.cardBg(isDark),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: AppColors.cardBorder(isDark)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Product Image
+                Expanded(
+                  flex: 5,
+                  child: Stack(
+                    children: [
+                      Container(
+                        width: double.infinity,
+                        decoration: BoxDecoration(
+                          borderRadius: const BorderRadius.vertical(
+                            top: Radius.circular(15),
+                          ),
+                          color: AppColors.inputFill(isDark),
+                        ),
+                        child: product.imagePath.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: const BorderRadius.vertical(
+                                  top: Radius.circular(15),
+                                ),
+                                child: product.imagePath.startsWith('assets/')
+                                    ? Image.asset(
+                                        product.imagePath,
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Center(
+                                            child: Icon(
+                                              Icons.fastfood_rounded,
+                                              size: 40,
+                                              color: AppColors.iconSecondary(isDark),
+                                            ),
+                                          );
+                                        },
+                                      )
+                                    : Image.file(
+                                        File(product.imagePath),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Center(
+                                            child: Icon(
+                                              Icons.fastfood_rounded,
+                                              size: 40,
+                                              color: AppColors.iconSecondary(isDark),
+                                            ),
+                                          );
+                                        },
+                                      ),
+                              )
+                            : Center(
+                                child: Icon(
+                                  Icons.fastfood_rounded,
+                                  size: 40,
+                                  color: AppColors.iconSecondary(isDark),
+                                ),
+                              ),
+                      ),
+                      // Badge tersedia/habis
+                      if (!product.isTersedia)
+                        Positioned(
+                          top: 8,
+                          right: 8,
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 8,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.statusClosed,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Text(
+                              "Habis",
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                // Product Info
+                Expanded(
+                  flex: 4,
+                  child: Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Text(
+                          product.namaProduk,
+                          style: TextStyle(
+                            color: AppColors.textPrimary(isDark),
+                            fontWeight: FontWeight.bold,
+                            fontSize: 13,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Text(
+                              formatCurrency.format(product.harga),
+                              style: const TextStyle(
+                                color: AppColors.accent,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 13,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                            Container(
+                              padding: const EdgeInsets.all(6),
+                              decoration: const BoxDecoration(
+                                color: AppColors.accent,
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(
+                                Icons.add_rounded,
+                                color: Colors.white,
+                                size: 16,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      );
+    }
+
+    // Fallback ke dummy data jika belum ada produk di DB
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
       shrinkWrap: true,
@@ -382,7 +563,7 @@ class BuyerHomeScreen extends StatelessWidget {
         crossAxisCount: 2,
         mainAxisSpacing: 16,
         crossAxisSpacing: 16,
-        childAspectRatio: 0.75, // Adjust for card height
+        childAspectRatio: 0.75,
       ),
       itemCount: dummyRecommendedProducts.length,
       itemBuilder: (context, index) {
@@ -407,10 +588,9 @@ class BuyerHomeScreen extends StatelessWidget {
                     color: AppColors.inputFill(isDark),
                   ),
                   width: double.infinity,
-                  child: Icon(
-                    Icons.fastfood_rounded,
-                    size: 40,
-                    color: AppColors.iconSecondary(isDark),
+                  child: Image.asset(
+                    "assets/images/es_cendol.png",
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),

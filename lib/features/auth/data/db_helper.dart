@@ -24,7 +24,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 4,
+      version: 6,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users(
@@ -36,7 +36,10 @@ class DBHelper {
             role TEXT,
             nama_toko TEXT,
             jenis_produk TEXT,
-            nama_makanan TEXT
+            nama_makanan TEXT,
+            status_jualan INTEGER DEFAULT 1,
+            jam_operasional TEXT DEFAULT '',
+            lokasi TEXT DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -47,6 +50,8 @@ class DBHelper {
             harga REAL,
             deskripsi TEXT,
             image_path TEXT,
+            stok INTEGER DEFAULT 0,
+            is_tersedia INTEGER DEFAULT 1,
             FOREIGN KEY (id_pedagang) REFERENCES users (id) ON DELETE CASCADE
           )
         ''');
@@ -64,7 +69,10 @@ class DBHelper {
             role TEXT,
             nama_toko TEXT,
             jenis_produk TEXT,
-            nama_makanan TEXT
+            nama_makanan TEXT,
+            status_jualan INTEGER DEFAULT 1,
+            jam_operasional TEXT DEFAULT '',
+            lokasi TEXT DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -75,6 +83,8 @@ class DBHelper {
             harga REAL,
             deskripsi TEXT,
             image_path TEXT,
+            stok INTEGER DEFAULT 0,
+            is_tersedia INTEGER DEFAULT 1,
             FOREIGN KEY (id_pedagang) REFERENCES users (id) ON DELETE CASCADE
           )
         ''');
@@ -188,5 +198,37 @@ class DBHelper {
   Future<void> deleteProduct(int id) async {
     final db = await database;
     await db.delete('produk', where: 'id = ?', whereArgs: [id]);
+  }
+
+  // READ ALL (Untuk tampil di buyer home)
+  Future<List<ProductModelSql>> getAllProducts() async {
+    final db = await database;
+    final List<Map<String, dynamic>> results = await db.query('produk');
+    return results.map((map) => ProductModelSql.fromMap(map)).toList();
+  }
+
+  // Get user by id
+  Future<UserModelSql?> getUserById(int id) async {
+    final db = await database;
+    final List<Map<String, dynamic>> results = await db.query(
+      'users',
+      where: 'id = ?',
+      whereArgs: [id],
+    );
+    if (results.isNotEmpty) {
+      return UserModelSql.fromMap(results.first);
+    }
+    return null;
+  }
+
+  // Get all pedagang
+  Future<List<UserModelSql>> getAllPedagang() async {
+    final db = await database;
+    final List<Map<String, dynamic>> results = await db.query(
+      'users',
+      where: 'role = ? OR role = ? OR nama_toko IS NOT NULL',
+      whereArgs: ['pedagang', 'pedagang_dan_pembeli'],
+    );
+    return results.map((map) => UserModelSql.fromMap(map)).toList();
   }
 }

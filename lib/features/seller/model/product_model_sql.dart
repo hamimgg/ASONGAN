@@ -5,6 +5,8 @@ class ProductModelSql {
   final double harga;
   final String deskripsi;
   final String imagePath;
+  final int stok;
+  final bool isTersedia;
 
   ProductModelSql({
     this.id,
@@ -13,6 +15,8 @@ class ProductModelSql {
     required this.harga,
     required this.deskripsi,
     required this.imagePath,
+    this.stok = 0,
+    this.isTersedia = true,
   });
 
   Map<String, dynamic> toMap() {
@@ -23,6 +27,8 @@ class ProductModelSql {
       'harga': harga,
       'deskripsi': deskripsi,
       'image_path': imagePath,
+      'stok': stok,
+      'is_tersedia': isTersedia ? 1 : 0,
     };
   }
 
@@ -34,6 +40,8 @@ class ProductModelSql {
       harga: map['harga']?.toDouble() ?? 0.0,
       deskripsi: map['deskripsi'] ?? '',
       imagePath: map['image_path'] ?? '',
+      stok: map['stok']?.toInt() ?? 0,
+      isTersedia: (map['is_tersedia'] ?? 1) == 1,
     );
   }
 }

@@ -12,6 +12,9 @@ class StoreSummaryModel {
     required this.bestSellingMenu,
     required this.lowStockMenu,
   });
+
+  bool get isOpen => isStoreOpen;
+  int get todayVisitor => todayVisitors;
 }
 
 // Dummy data yang bisa diakses dari berbagai halaman

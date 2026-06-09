@@ -1,7 +1,9 @@
+import 'dart:io';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 
 class ProductFormBottomSheet extends StatefulWidget {
   final int idPedagang;
@@ -24,6 +26,10 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
   late TextEditingController _nameController;
   late TextEditingController _priceController;
   late TextEditingController _descController;
+  late TextEditingController _stokController;
+  late bool _isTersedia;
+  File? _imageFile;
+  final ImagePicker _picker = ImagePicker();
 
   @override
   void initState() {
@@ -31,6 +37,13 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
     _nameController = TextEditingController(text: widget.productToEdit?.namaProduk ?? '');
     _priceController = TextEditingController(text: widget.productToEdit?.harga.toString() ?? '');
     _descController = TextEditingController(text: widget.productToEdit?.deskripsi ?? '');
+    _stokController = TextEditingController(text: widget.productToEdit?.stok.toString() ?? '0');
+    _isTersedia = widget.productToEdit?.isTersedia ?? true;
+    if (widget.productToEdit?.imagePath != null &&
+        widget.productToEdit!.imagePath.isNotEmpty &&
+        !widget.productToEdit!.imagePath.startsWith('assets/')) {
+      _imageFile = File(widget.productToEdit!.imagePath);
+    }
   }
 
   @override
@@ -38,7 +51,17 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
     _nameController.dispose();
     _priceController.dispose();
     _descController.dispose();
+    _stokController.dispose();
     super.dispose();
+  }
+
+  Future<void> _pickImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _imageFile = File(pickedFile.path);
+      });
+    }
   }
 
   Future<void> _save() async {
@@ -49,7 +72,9 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
         namaProduk: _nameController.text,
         harga: double.tryParse(_priceController.text) ?? 0,
         deskripsi: _descController.text,
-        imagePath: widget.productToEdit?.imagePath ?? '', // placeholder image
+        imagePath: _imageFile != null ? _imageFile!.path : (widget.productToEdit?.imagePath ?? ''),
+        stok: int.tryParse(_stokController.text) ?? 0,
+        isTersedia: _isTersedia,
       );
 
       bool success;
@@ -108,6 +133,63 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
                     ),
                   ),
                   const SizedBox(height: 16),
+                  Center(
+                    child: GestureDetector(
+                      onTap: _pickImage,
+                      child: Container(
+                        width: 120,
+                        height: 120,
+                        decoration: BoxDecoration(
+                          color: inputFill,
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: inputBorder),
+                        ),
+                        child: _imageFile != null
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(15),
+                                child: Image.file(
+                                  _imageFile!,
+                                  fit: BoxFit.cover,
+                                ),
+                              )
+                            : (widget.productToEdit?.imagePath != null &&
+                                    widget.productToEdit!.imagePath.isNotEmpty)
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(15),
+                                    child: widget.productToEdit!.imagePath.startsWith('assets/')
+                                        ? Image.asset(
+                                            widget.productToEdit!.imagePath,
+                                            fit: BoxFit.cover,
+                                          )
+                                        : Image.file(
+                                            File(widget.productToEdit!.imagePath),
+                                            fit: BoxFit.cover,
+                                          ),
+                                  )
+                                : Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      Icon(
+                                        Icons.add_a_photo_rounded,
+                                        color: isDark ? const Color(0xFF5A5A5C) : const Color(0xFF9E9E9E),
+                                        size: 32,
+                                      ),
+                                      const SizedBox(height: 8),
+                                      Text(
+                                        "Unggah Foto",
+                                        style: TextStyle(
+                                          color: subtitleColor,
+                                          fontSize: 12,
+                                          fontWeight: FontWeight.w500,
+                                          fontFamily: 'Plus Jakarta Sans',
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
                   _buildTextField(
                     controller: _nameController,
                     label: "Nama Produk",
@@ -139,6 +221,41 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
                     borderColor: inputBorder,
                     textColor: textColor,
                     subtitleColor: subtitleColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _stokController,
+                    label: "Stok",
+                    isDark: isDark,
+                    fillColor: inputFill,
+                    borderColor: inputBorder,
+                    textColor: textColor,
+                    subtitleColor: subtitleColor,
+                    keyboardType: TextInputType.number,
+                    validator: (val) => val == null || val.isEmpty ? "Harap diisi" : null,
+                  ),
+                  const SizedBox(height: 16),
+                  // Toggle Tersedia
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Text(
+                        "Tersedia",
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
+                      ),
+                      Switch(
+                        value: _isTersedia,
+                        activeThumbColor: const Color(0xFFF5A623),
+                        onChanged: (val) {
+                          setState(() => _isTersedia = val);
+                        },
+                      ),
+                    ],
                   ),
                   const SizedBox(height: 20),
                   SizedBox(

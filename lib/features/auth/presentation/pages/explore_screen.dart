@@ -260,8 +260,8 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 ),
               ),
               // Map markers (Speech Bubble tooltip shapes)
-              _buildMapMarker('Bang Jali', 0.28, 0.32, constraints, isDark),
-              _buildMapMarker('Es Boba', 0.68, 0.50, constraints, isDark),
+              _buildMapMarker('Bubur Ayam 77', 0.28, 0.32, constraints, isDark),
+              _buildMapMarker('Siomay Hoki', 0.68, 0.50, constraints, isDark),
               _buildMapMarker('Nasi Uduk', 0.20, 0.68, constraints, isDark),
 
               // Floating Search Bar & Filter Chips at the top
