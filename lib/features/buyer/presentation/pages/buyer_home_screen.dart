@@ -1,7 +1,11 @@
 import 'dart:io';
+
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
+import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/buyer/presentation/pages/buyer_product_detail_screen.dart';
+import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -16,20 +20,23 @@ class BuyerHomeScreen extends StatefulWidget {
 }
 
 class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
-  List<ProductModelSql> _allProducts = [];
-  bool _isLoadingProducts = true;
+  List<ProductModelSql> _dbProducts = [];
+  List<UserModelSql> _dbSellers = [];
+  bool _isLoadingData = true;
 
   @override
   void initState() {
     super.initState();
-    _loadProducts();
+    _loadData();
   }
 
-  Future<void> _loadProducts() async {
+  Future<void> _loadData() async {
     final products = await DBHelper().getAllProducts();
+    final sellers = await DBHelper().getAllPedagang();
     setState(() {
-      _allProducts = products;
-      _isLoadingProducts = false;
+      _dbProducts = products;
+      _dbSellers = sellers;
+      _isLoadingData = false;
     });
   }
 
@@ -222,149 +229,198 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildNearbySellers(bool isDark) {
+    if (_isLoadingData) {
+      return const SizedBox(
+        height: 200,
+        child: Center(
+          child: CircularProgressIndicator(color: AppColors.accent),
+        ),
+      );
+    }
+
+    final totalCount = _dbSellers.length + dummyNearbySellers.length;
+
     return SizedBox(
       height: 200,
       child: ListView.builder(
         padding: const EdgeInsets.symmetric(horizontal: 16),
         scrollDirection: Axis.horizontal,
-        itemCount: dummyNearbySellers.length,
+        itemCount: totalCount,
         itemBuilder: (context, index) {
-          final seller = dummyNearbySellers[index];
-          return Container(
-            width: 240,
-            margin: const EdgeInsets.only(right: 16),
-            decoration: BoxDecoration(
-              color: AppColors.cardBg(isDark),
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: AppColors.cardBorder(isDark)),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Top Image with Status badge
-                Expanded(
-                  flex: 3,
-                  child: Stack(
-                    children: [
-                      Container(
-                        decoration: BoxDecoration(
-                          borderRadius: const BorderRadius.vertical(
-                            top: Radius.circular(15),
-                          ),
-                          color: AppColors.inputFill(isDark),
-                        ),
-                        width: double.infinity,
-                        child: Image.asset(
-                          "assets/images/tukang_siomay.png",
-                          fit: BoxFit.cover,
-                        ),
-                      ),
-                      if (seller.isSelling)
-                        Positioned(
-                          top: 10,
-                          right: 10,
-                          child: Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 8,
-                              vertical: 4,
-                            ),
-                            decoration: BoxDecoration(
-                              color: AppColors.statusActive,
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            child: const Row(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Icon(
-                                  Icons.circle,
-                                  color: Colors.white,
-                                  size: 8,
-                                ),
-                                SizedBox(width: 4),
-                                Text(
-                                  "Sedang Berjualan",
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                    ],
+          String name;
+          bool isSelling;
+          String distance;
+          double rating;
+
+          if (index < _dbSellers.length) {
+            final seller = _dbSellers[index];
+            name = seller.namaToko ?? seller.nama ?? 'Pedagang';
+            isSelling = seller.statusJualan == true;
+            distance = seller.lokasi != null && seller.lokasi!.isNotEmpty
+                ? seller.lokasi!
+                : "Tidak ada lokasi";
+            rating = 4.8; // Dummy value
+          } else {
+            final dummyIndex = index - _dbSellers.length;
+            final seller = dummyNearbySellers[dummyIndex];
+            name = seller.name;
+            isSelling = seller.isSelling;
+            distance = seller.distance;
+            rating = seller.rating;
+          }
+
+          return GestureDetector(
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BuyerStoreDetailScreen(
+                    dbSeller: (index < _dbSellers.length)
+                        ? _dbSellers[index]
+                        : null,
+                    dummySeller: (index >= _dbSellers.length)
+                        ? dummyNearbySellers[index - _dbSellers.length]
+                        : null,
                   ),
                 ),
-                // Bottom Info
-                Expanded(
-                  flex: 2,
-                  child: Padding(
-                    padding: const EdgeInsets.all(12),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      mainAxisAlignment: MainAxisAlignment.center,
+              );
+            },
+            child: Container(
+              width: 240,
+              margin: const EdgeInsets.only(right: 16),
+              decoration: BoxDecoration(
+                color: AppColors.cardBg(isDark),
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(color: AppColors.cardBorder(isDark)),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Top Image with Status badge
+                  Expanded(
+                    flex: 3,
+                    child: Stack(
                       children: [
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                seller.name,
-                                style: TextStyle(
-                                  color: AppColors.textPrimary(isDark),
-                                  fontWeight: FontWeight.bold,
-                                  fontSize: 14,
-                                  fontFamily: 'Plus Jakarta Sans',
-                                ),
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                              ),
+                        Container(
+                          decoration: BoxDecoration(
+                            borderRadius: const BorderRadius.vertical(
+                              top: Radius.circular(15),
                             ),
-                            Row(
-                              children: [
-                                const Icon(
-                                  Icons.star_rounded,
-                                  color: AppColors.accent,
-                                  size: 14,
-                                ),
-                                const SizedBox(width: 4),
-                                Text(
-                                  seller.rating.toString(),
-                                  style: TextStyle(
-                                    color: AppColors.textPrimary(isDark),
-                                    fontSize: 12,
-                                    fontWeight: FontWeight.bold,
+                            color: AppColors.inputFill(isDark),
+                          ),
+                          width: double.infinity,
+                          child: Image.asset(
+                            "assets/images/tukang_siomay.png",
+                            fit: BoxFit.cover,
+                          ),
+                        ),
+                        if (isSelling)
+                          Positioned(
+                            top: 10,
+                            right: 10,
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 8,
+                                vertical: 4,
+                              ),
+                              decoration: BoxDecoration(
+                                color: AppColors.statusActive,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: const Row(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Icon(
+                                    Icons.circle,
+                                    color: Colors.white,
+                                    size: 8,
                                   ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 6),
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.near_me_rounded,
-                              color: AppColors.textSubtitle(isDark),
-                              size: 12,
-                            ),
-                            const SizedBox(width: 4),
-                            Text(
-                              seller.distance,
-                              style: TextStyle(
-                                color: AppColors.textSubtitle(isDark),
-                                fontSize: 11,
-                                fontFamily: 'Plus Jakarta Sans',
+                                  SizedBox(width: 4),
+                                  Text(
+                                    "Sedang Berjualan",
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
-                          ],
-                        ),
+                          ),
                       ],
                     ),
                   ),
-                ),
-              ],
+                  // Bottom Info
+                  Expanded(
+                    flex: 2,
+                    child: Padding(
+                      padding: const EdgeInsets.all(12),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Expanded(
+                                child: Text(
+                                  name,
+                                  style: TextStyle(
+                                    color: AppColors.textPrimary(isDark),
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 14,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ),
+                              Row(
+                                children: [
+                                  const Icon(
+                                    Icons.star_rounded,
+                                    color: AppColors.accent,
+                                    size: 14,
+                                  ),
+                                  const SizedBox(width: 4),
+                                  Text(
+                                    rating.toString(),
+                                    style: TextStyle(
+                                      color: AppColors.textPrimary(isDark),
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 6),
+                          Row(
+                            children: [
+                              Icon(
+                                Icons.near_me_rounded,
+                                color: AppColors.textSubtitle(isDark),
+                                size: 12,
+                              ),
+                              const SizedBox(width: 4),
+                              Text(
+                                distance,
+                                style: TextStyle(
+                                  color: AppColors.textSubtitle(isDark),
+                                  fontSize: 11,
+                                  fontFamily: 'Plus Jakarta Sans',
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
             ),
           );
         },
@@ -379,10 +435,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       decimalDigits: 0,
     );
 
-    // Gabungkan data dari DB + dummy data sebagai fallback
-    final bool hasDbProducts = _allProducts.isNotEmpty;
-
-    if (_isLoadingProducts) {
+    if (_isLoadingData) {
       return const Padding(
         padding: EdgeInsets.all(32),
         child: Center(
@@ -391,22 +444,61 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       );
     }
 
-    if (hasDbProducts) {
-      // Tampilkan produk dari database
-      return GridView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        shrinkWrap: true,
-        physics: const NeverScrollableScrollPhysics(),
-        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-          crossAxisCount: 2,
-          mainAxisSpacing: 16,
-          crossAxisSpacing: 16,
-          childAspectRatio: 0.75,
-        ),
-        itemCount: _allProducts.length,
-        itemBuilder: (context, index) {
-          final product = _allProducts[index];
-          return Container(
+    final totalCount = _dbProducts.length + dummyRecommendedProducts.length;
+
+    return GridView.builder(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 2,
+        mainAxisSpacing: 16,
+        crossAxisSpacing: 16,
+        childAspectRatio: 0.75,
+      ),
+      itemCount: totalCount,
+      itemBuilder: (context, index) {
+        String name;
+        double price;
+        bool isTersedia;
+        String imagePath;
+        bool isLocalImage;
+
+        if (index < _dbProducts.length) {
+          final product = _dbProducts[index];
+          name = product.namaProduk;
+          price = product.harga;
+          isTersedia = product.isTersedia;
+          imagePath = product.imagePath;
+          isLocalImage =
+              imagePath.isNotEmpty && !imagePath.startsWith('assets/');
+        } else {
+          final dummyIndex = index - _dbProducts.length;
+          final product = dummyRecommendedProducts[dummyIndex];
+          name = product.name;
+          price = product.price.toDouble();
+          isTersedia = true; // Dummy products are always available
+          imagePath = "assets/images/es_cendol.png"; // Fallback dummy image
+          isLocalImage = false;
+        }
+
+        return GestureDetector(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => BuyerProductDetailScreen(
+                  dbProduct: (index < _dbProducts.length)
+                      ? _dbProducts[index]
+                      : null,
+                  dummyProduct: (index >= _dbProducts.length)
+                      ? dummyRecommendedProducts[index - _dbProducts.length]
+                      : null,
+                ),
+              ),
+            );
+          },
+          child: Container(
             decoration: BoxDecoration(
               color: AppColors.cardBg(isDark),
               borderRadius: BorderRadius.circular(16),
@@ -428,37 +520,45 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                           ),
                           color: AppColors.inputFill(isDark),
                         ),
-                        child: product.imagePath.isNotEmpty
+                        child: imagePath.isNotEmpty
                             ? ClipRRect(
                                 borderRadius: const BorderRadius.vertical(
                                   top: Radius.circular(15),
                                 ),
-                                child: product.imagePath.startsWith('assets/')
-                                    ? Image.asset(
-                                        product.imagePath,
+                                child: isLocalImage
+                                    ? Image.file(
+                                        File(imagePath),
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Center(
-                                            child: Icon(
-                                              Icons.fastfood_rounded,
-                                              size: 40,
-                                              color: AppColors.iconSecondary(isDark),
-                                            ),
-                                          );
-                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Center(
+                                                child: Icon(
+                                                  Icons.fastfood_rounded,
+                                                  size: 40,
+                                                  color:
+                                                      AppColors.iconSecondary(
+                                                        isDark,
+                                                      ),
+                                                ),
+                                              );
+                                            },
                                       )
-                                    : Image.file(
-                                        File(product.imagePath),
+                                    : Image.asset(
+                                        imagePath,
                                         fit: BoxFit.cover,
-                                        errorBuilder: (context, error, stackTrace) {
-                                          return Center(
-                                            child: Icon(
-                                              Icons.fastfood_rounded,
-                                              size: 40,
-                                              color: AppColors.iconSecondary(isDark),
-                                            ),
-                                          );
-                                        },
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Center(
+                                                child: Icon(
+                                                  Icons.fastfood_rounded,
+                                                  size: 40,
+                                                  color:
+                                                      AppColors.iconSecondary(
+                                                        isDark,
+                                                      ),
+                                                ),
+                                              );
+                                            },
                                       ),
                               )
                             : Center(
@@ -470,7 +570,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                               ),
                       ),
                       // Badge tersedia/habis
-                      if (!product.isTersedia)
+                      if (!isTersedia)
                         Positioned(
                           top: 8,
                           right: 8,
@@ -507,7 +607,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                       mainAxisAlignment: MainAxisAlignment.spaceBetween,
                       children: [
                         Text(
-                          product.namaProduk,
+                          name,
                           style: TextStyle(
                             color: AppColors.textPrimary(isDark),
                             fontWeight: FontWeight.bold,
@@ -521,7 +621,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
                             Text(
-                              formatCurrency.format(product.harga),
+                              formatCurrency.format(price),
                               style: const TextStyle(
                                 color: AppColors.accent,
                                 fontWeight: FontWeight.bold,
@@ -549,102 +649,6 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 ),
               ],
             ),
-          );
-        },
-      );
-    }
-
-    // Fallback ke dummy data jika belum ada produk di DB
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: dummyRecommendedProducts.length,
-      itemBuilder: (context, index) {
-        final product = dummyRecommendedProducts[index];
-        return Container(
-          decoration: BoxDecoration(
-            color: AppColors.cardBg(isDark),
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: AppColors.cardBorder(isDark)),
-          ),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Product Image
-              Expanded(
-                flex: 5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: const BorderRadius.vertical(
-                      top: Radius.circular(15),
-                    ),
-                    color: AppColors.inputFill(isDark),
-                  ),
-                  width: double.infinity,
-                  child: Image.asset(
-                    "assets/images/es_cendol.png",
-                    fit: BoxFit.cover,
-                  ),
-                ),
-              ),
-              // Product Info
-              Expanded(
-                flex: 4,
-                child: Padding(
-                  padding: const EdgeInsets.all(12),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Text(
-                        product.name,
-                        style: TextStyle(
-                          color: AppColors.textPrimary(isDark),
-                          fontWeight: FontWeight.bold,
-                          fontSize: 13,
-                          fontFamily: 'Plus Jakarta Sans',
-                        ),
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            formatCurrency.format(product.price),
-                            style: const TextStyle(
-                              color: AppColors.accent,
-                              fontWeight: FontWeight.bold,
-                              fontSize: 13,
-                              fontFamily: 'Plus Jakarta Sans',
-                            ),
-                          ),
-                          Container(
-                            padding: const EdgeInsets.all(6),
-                            decoration: const BoxDecoration(
-                              color: AppColors.accent,
-                              shape: BoxShape.circle,
-                            ),
-                            child: const Icon(
-                              Icons.add_rounded,
-                              color: Colors.white,
-                              size: 16,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ],
-                  ),
-                ),
-              ),
-            ],
           ),
         );
       },

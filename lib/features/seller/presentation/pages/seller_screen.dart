@@ -1,4 +1,5 @@
 import 'dart:io';
+
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
@@ -137,7 +138,7 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
           body: Column(
             children: [
               _buildAppBar(context, isDark),
-              Expanded(child: _buildProductGrid(isDark)),
+              Expanded(child: _buildGroupedProductList(isDark)),
             ],
           ),
           floatingActionButton: FloatingActionButton(
@@ -151,7 +152,7 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
     );
   }
 
-  Widget _buildProductGrid(bool isDark) {
+  Widget _buildGroupedProductList(bool isDark) {
     if (_isLoading) {
       return const Center(
         child: CircularProgressIndicator(color: AppColors.accent),
@@ -191,18 +192,67 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
       );
     }
 
-    return GridView.builder(
+    Map<String, List<ProductModelSql>> groupedProducts = {};
+    for (var p in _products) {
+      if (!groupedProducts.containsKey(p.kategori)) {
+        groupedProducts[p.kategori] = [];
+      }
+      groupedProducts[p.kategori]!.add(p);
+    }
+
+    final categories = groupedProducts.keys.toList();
+
+    return ListView.builder(
       padding: const EdgeInsets.all(16),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.58,
-      ),
-      itemCount: _products.length,
+      itemCount: categories.length,
       itemBuilder: (context, index) {
-        final p = _products[index];
-        return _buildProductCard(p, isDark);
+        final category = categories[index];
+        final categoryProducts = groupedProducts[category]!;
+
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Padding(
+              padding: const EdgeInsets.only(bottom: 12),
+
+              // padding: const EdgeInsets.only(bottom: 12, top: index == 0 ? 0 : 16),
+              child: Row(
+                children: [
+                  Icon(
+                    Icons.restaurant_menu_rounded,
+                    color: AppColors.accent,
+                    size: 20,
+                  ),
+                  const SizedBox(width: 8),
+                  Text(
+                    category,
+                    style: TextStyle(
+                      color: AppColors.textPrimary(isDark),
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            GridView.builder(
+              shrinkWrap: true,
+              physics: const NeverScrollableScrollPhysics(),
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 16,
+                crossAxisSpacing: 16,
+                childAspectRatio: 0.58,
+              ),
+              itemCount: categoryProducts.length,
+              itemBuilder: (context, pIndex) {
+                final p = categoryProducts[pIndex];
+                return _buildProductCard(p, isDark);
+              },
+            ),
+          ],
+        );
       },
     );
   }
@@ -342,16 +392,30 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
                       fontFamily: 'Plus Jakarta Sans',
                     ),
                   ),
+                  if (p.variasi.isNotEmpty) ...[
+                    const SizedBox(height: 4),
+                    Text(
+                      p.variasi,
+                      style: TextStyle(
+                        color: AppColors.textSubtitle(
+                          isDark,
+                        ).withValues(alpha: 0.8),
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
                   const Spacer(),
                   // Tombol Edit & Hapus
                   Row(
                     children: [
                       Expanded(
                         child: InkWell(
-                          onTap: () => _showFormBottomSheet(
-                            isDark,
-                            productToEdit: p,
-                          ),
+                          onTap: () =>
+                              _showFormBottomSheet(isDark, productToEdit: p),
                           borderRadius: BorderRadius.circular(8),
                           child: Container(
                             padding: const EdgeInsets.symmetric(vertical: 6),
@@ -362,8 +426,11 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.edit_rounded,
-                                    color: Colors.blue, size: 14),
+                                Icon(
+                                  Icons.edit_rounded,
+                                  color: Colors.blue,
+                                  size: 14,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   "Edit",
@@ -393,8 +460,11 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
                             child: const Row(
                               mainAxisAlignment: MainAxisAlignment.center,
                               children: [
-                                Icon(Icons.delete_rounded,
-                                    color: Colors.red, size: 14),
+                                Icon(
+                                  Icons.delete_rounded,
+                                  color: Colors.red,
+                                  size: 14,
+                                ),
                                 SizedBox(width: 4),
                                 Text(
                                   "Hapus",

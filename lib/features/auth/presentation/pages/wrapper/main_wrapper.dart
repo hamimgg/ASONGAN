@@ -1,11 +1,11 @@
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/presentation/pages/explore_screen.dart';
-import 'package:asongan_app/features/auth/presentation/pages/home_screen.dart';
-import 'package:asongan_app/features/auth/presentation/pages/order_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/profile_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/drawer.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_home_screen.dart';
+import 'package:asongan_app/features/buyer/presentation/pages/explore_screen.dart';
+import 'package:asongan_app/features/buyer/presentation/pages/order_screen.dart';
+import 'package:asongan_app/features/seller/presentation/pages/seller_home_screen.dart';
 import 'package:asongan_app/features/seller/presentation/pages/seller_screen.dart';
 import 'package:asongan_app/features/seller/presentation/pages/store_detail_screen.dart';
 import 'package:asongan_app/main.dart';

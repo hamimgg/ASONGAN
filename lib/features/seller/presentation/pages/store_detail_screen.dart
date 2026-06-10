@@ -2,7 +2,7 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/seller/model/store_summary_model.dart';
+import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -22,6 +22,10 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   bool _statusJualan = true;
   final TextEditingController _jamController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
+  final TextEditingController _namaTokoController = TextEditingController();
+
+  List<String> _bestSellingMenu = [];
+  List<String> _lowStockMenu = [];
 
   @override
   void initState() {
@@ -33,6 +37,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   void dispose() {
     _jamController.dispose();
     _lokasiController.dispose();
+    _namaTokoController.dispose();
     super.dispose();
   }
 
@@ -41,11 +46,28 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     if (user != null && user.id != null) {
       final latestUser = await DBHelper().getUserById(user.id!);
       if (latestUser != null) {
+        final products = await DBHelper().getProductsByPedagang(user.id!);
+        
+        List<String> bestSelling = [];
+        for (int i = 0; i < products.length && i < 3; i++) {
+          bestSelling.add(products[i].namaProduk);
+        }
+
+        List<String> lowStock = [];
+        for (var p in products) {
+          if (p.stok < 5) {
+            lowStock.add("${p.namaProduk} (Sisa ${p.stok})");
+          }
+        }
+
         setState(() {
           _currentUser = latestUser;
           _statusJualan = latestUser.statusJualan ?? true;
           _jamController.text = latestUser.jamOperasional ?? '';
           _lokasiController.text = latestUser.lokasi ?? '';
+          _namaTokoController.text = latestUser.namaToko ?? latestUser.nama ?? '';
+          _bestSellingMenu = bestSelling;
+          _lowStockMenu = lowStock;
           _isLoading = false;
         });
         return;
@@ -66,7 +88,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       telepon: _currentUser!.telepon,
       nama: _currentUser!.nama,
       role: _currentUser!.role,
-      namaToko: _currentUser!.namaToko,
+      namaToko: _namaTokoController.text,
       jenisProduk: _currentUser!.jenisProduk,
       namaMakanan: _currentUser!.namaMakanan,
       statusJualan: _statusJualan,
@@ -98,6 +120,30 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     }
   }
 
+  Future<void> _selectTimeRange(BuildContext context) async {
+    final TimeOfDay? startTime = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 8, minute: 0),
+      helpText: 'Pilih Jam Buka',
+    );
+
+    if (startTime != null && mounted) {
+      final TimeOfDay? endTime = await showTimePicker(
+        context: context,
+        initialTime: const TimeOfDay(hour: 22, minute: 0),
+        helpText: 'Pilih Jam Tutup',
+      );
+
+      if (endTime != null) {
+        final startFormat = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+        final endFormat = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+        setState(() {
+          _jamController.text = '$startFormat - $endFormat';
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -110,8 +156,6 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         final Color subtitleColor = AppColors.textSubtitle(isDark);
         final Color inputFill = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9);
         final Color inputBorder = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
-
-        final data = dummyStoreSummary;
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -138,7 +182,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             ),
                             const SizedBox(height: 12),
                             _buildListCard(
-                              items: data.bestSellingMenu,
+                              items: _bestSellingMenu,
                               cardBg: cardBg,
                               cardBorder: cardBorder,
                               textColor: textColor,
@@ -155,7 +199,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                             ),
                             const SizedBox(height: 12),
                             _buildListCard(
-                              items: data.lowStockMenu,
+                              items: _lowStockMenu,
                               cardBg: cardBg,
                               cardBorder: cardBorder,
                               textColor: textColor,
@@ -208,6 +252,42 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             ],
           ),
           const Divider(height: 24),
+          
+          // Nama Toko
+          Text(
+            "Nama Toko",
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontWeight: FontWeight.w600,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          const SizedBox(height: 8),
+          TextField(
+            controller: _namaTokoController,
+            style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+            decoration: InputDecoration(
+              hintText: "Contoh: Warung Berkah",
+              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
+              filled: true,
+              fillColor: inputFill,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
           
           // Switch Status Jualan
           Row(
@@ -271,26 +351,33 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             ),
           ),
           const SizedBox(height: 8),
-          TextField(
-            controller: _jamController,
-            style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
-            decoration: InputDecoration(
-              hintText: "Contoh: 17:00 - 23:00",
-              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
-              filled: true,
-              fillColor: inputFill,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              border: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: inputBorder),
-              ),
-              enabledBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: inputBorder),
-              ),
-              focusedBorder: OutlineInputBorder(
-                borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+          InkWell(
+            onTap: () => _selectTimeRange(context),
+            borderRadius: BorderRadius.circular(12),
+            child: IgnorePointer(
+              child: TextField(
+                controller: _jamController,
+                style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+                decoration: InputDecoration(
+                  hintText: "Contoh: 17:00 - 23:00",
+                  hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
+                  filled: true,
+                  fillColor: inputFill,
+                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                  suffixIcon: Icon(Icons.access_time_rounded, color: subtitleColor, size: 20),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: inputBorder),
+                  ),
+                  enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide(color: inputBorder),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                  ),
+                ),
               ),
             ),
           ),

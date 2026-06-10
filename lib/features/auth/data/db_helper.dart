@@ -24,7 +24,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 6,
+      version: 7,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users(
@@ -52,6 +52,8 @@ class DBHelper {
             image_path TEXT,
             stok INTEGER DEFAULT 0,
             is_tersedia INTEGER DEFAULT 1,
+            kategori TEXT DEFAULT 'Umum',
+            variasi TEXT DEFAULT '',
             FOREIGN KEY (id_pedagang) REFERENCES users (id) ON DELETE CASCADE
           )
         ''');
@@ -85,6 +87,8 @@ class DBHelper {
             image_path TEXT,
             stok INTEGER DEFAULT 0,
             is_tersedia INTEGER DEFAULT 1,
+            kategori TEXT DEFAULT 'Umum',
+            variasi TEXT DEFAULT '',
             FOREIGN KEY (id_pedagang) REFERENCES users (id) ON DELETE CASCADE
           )
         ''');

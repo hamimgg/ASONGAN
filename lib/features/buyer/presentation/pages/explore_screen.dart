@@ -1,3 +1,8 @@
+import 'dart:math' as math;
+
+import 'package:asongan_app/features/auth/data/db_helper.dart';
+import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -14,6 +19,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['Semua', 'Terdekat', 'Makanan', 'Minuman'];
   final PanelController _panelController = PanelController();
+  List<UserModelSql> _pedagangList = [];
+  bool _isLoading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadData();
+  }
+
+  Future<void> _loadData() async {
+    final list = await DBHelper().getAllPedagang();
+    if (mounted) {
+      setState(() {
+        _pedagangList = list;
+        _isLoading = false;
+      });
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -27,28 +50,32 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
         return Scaffold(
           backgroundColor: scaffoldBg,
-          body: Column(
-            children: [
-              // Custom AppBar
-              _buildAppBar(context, isDark),
-              // Map + Sliding Panel (Floating search bar is placed inside the map stack)
-              Expanded(
-                child: SlidingUpPanel(
-                  controller: _panelController,
-                  minHeight: 200,
-                  maxHeight: 340,
-                  color: panelBg,
-                  borderRadius: const BorderRadius.vertical(
-                    top: Radius.circular(20),
-                  ),
-                  body: _buildMapArea(isDark),
-                  panel: _buildSlidePanel(isDark),
-                  parallaxEnabled: true,
-                  parallaxOffset: 0.3,
+          body: _isLoading
+              ? const Center(
+                  child: CircularProgressIndicator(color: Color(0xFFF5A623)),
+                )
+              : Column(
+                  children: [
+                    // Custom AppBar
+                    _buildAppBar(context, isDark),
+                    // Map + Sliding Panel
+                    Expanded(
+                      child: SlidingUpPanel(
+                        controller: _panelController,
+                        minHeight: 200,
+                        maxHeight: 340,
+                        color: panelBg,
+                        borderRadius: const BorderRadius.vertical(
+                          top: Radius.circular(20),
+                        ),
+                        body: _buildMapArea(isDark),
+                        panel: _buildSlidePanel(isDark),
+                        parallaxEnabled: true,
+                        parallaxOffset: 0.3,
+                      ),
+                    ),
+                  ],
                 ),
-              ),
-            ],
-          ),
         );
       },
     );
@@ -259,10 +286,22 @@ class _ExploreScreenState extends State<ExploreScreen> {
                   },
                 ),
               ),
-              // Map markers (Speech Bubble tooltip shapes)
-              _buildMapMarker('Bubur Ayam 77', 0.28, 0.32, constraints, isDark),
-              _buildMapMarker('Siomay Hoki', 0.68, 0.50, constraints, isDark),
-              _buildMapMarker('Nasi Uduk', 0.20, 0.68, constraints, isDark),
+              // Map markers
+              ..._pedagangList.map((p) {
+                final rand = math.Random(p.id ?? 0);
+                final relX = 0.2 + (rand.nextDouble() * 0.6); // 0.2 to 0.8
+                final relY = 0.3 + (rand.nextDouble() * 0.4); // 0.3 to 0.7
+                return _buildMapMarker(
+                  p.namaToko ?? p.nama ?? 'Pedagang',
+                  relX,
+                  relY,
+                  constraints,
+                  isDark,
+                  p.statusJualan ?? true,
+                  p.jenisProduk ?? '',
+                  p,
+                );
+              }),
 
               // Floating Search Bar & Filter Chips at the top
               Positioned(
@@ -315,63 +354,78 @@ class _ExploreScreenState extends State<ExploreScreen> {
     double relY,
     BoxConstraints constraints,
     bool isDark,
+    bool isActive,
+    String type,
+    UserModelSql seller,
   ) {
-    final bool isActive = name != 'Nasi Uduk';
     final Color markerColor = isActive
         ? const Color(0xFFF5A623)
         : (isDark ? const Color(0xFF3A3A3C) : const Color(0xFF9E9E9E));
     final Color textColor = Colors.white;
 
     IconData markerIcon = Icons.storefront_rounded;
-    if (name == 'Es Boba') markerIcon = Icons.local_drink_rounded;
-    if (name == 'Nasi Uduk') markerIcon = Icons.restaurant_rounded;
+    if (type.toLowerCase().contains('minuman'))
+      markerIcon = Icons.local_drink_rounded;
+    if (type.toLowerCase().contains('makanan') ||
+        type.toLowerCase().contains('berat'))
+      markerIcon = Icons.restaurant_rounded;
 
     return Positioned(
       left: relX * constraints.maxWidth - 50,
-      top: relY * constraints.maxHeight - 35,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-            decoration: BoxDecoration(
-              color: markerColor,
-              borderRadius: BorderRadius.circular(20),
-              boxShadow: [
-                BoxShadow(
-                  color: markerColor.withValues(alpha: 0.3),
-                  blurRadius: 8,
-                  spreadRadius: 1,
-                ),
-              ],
+      top: relY * constraints.maxHeight - 50,
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => BuyerStoreDetailScreen(dbSeller: seller),
             ),
-            child: Row(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                Icon(markerIcon, color: textColor, size: 14),
-                const SizedBox(width: 4),
-                Text(
-                  name,
-                  style: TextStyle(
-                    color: textColor,
-                    fontSize: 12,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'Plus Jakarta Sans',
+          );
+        },
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                color: markerColor,
+                borderRadius: BorderRadius.circular(20),
+                boxShadow: [
+                  BoxShadow(
+                    color: markerColor.withValues(alpha: 0.3),
+                    blurRadius: 8,
+                    spreadRadius: 1,
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(markerIcon, color: textColor, size: 14),
+                  const SizedBox(width: 4),
+                  Text(
+                    name,
+                    style: TextStyle(
+                      color: textColor,
+                      fontSize: 12,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'Plus Jakarta Sans',
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
-          // Triangle pointer under the speech bubble
-          Transform.translate(
-            offset: const Offset(0, -4),
-            child: Icon(
-              Icons.arrow_drop_down_rounded,
-              color: markerColor,
-              size: 20,
+            // Triangle pointer under the speech bubble
+            Transform.translate(
+              offset: const Offset(0, -4),
+              child: Icon(
+                Icons.arrow_drop_down_rounded,
+                color: markerColor,
+                size: 20,
+              ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -413,7 +467,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Pedagang Aktif (8)',
+                  'Pedagang Aktif (${_pedagangList.where((p) => p.statusJualan == true).length})',
                   style: TextStyle(
                     color: headerColor,
                     fontWeight: FontWeight.bold,
@@ -444,25 +498,47 @@ class _ExploreScreenState extends State<ExploreScreen> {
           // Horizontal pedagang cards
           SizedBox(
             height: 80,
-            child: ListView(
-              scrollDirection: Axis.horizontal,
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              children: [
-                _buildPedagangCard(
-                  name: 'Bubur Ayam 77',
-                  distance: '120m',
-                  imagePath: 'assets/images/tukang_bubur.png',
-                  isDark: isDark,
-                ),
-                const SizedBox(width: 12),
-                _buildPedagangCard(
-                  name: 'Siomay Hoki',
-                  distance: '350m',
-                  imagePath: 'assets/images/tukang_siomay.png',
-                  isDark: isDark,
-                ),
-              ],
-            ),
+            child: _pedagangList.isEmpty
+                ? const Center(
+                    child: Text(
+                      'Belum ada pedagang.',
+                      style: TextStyle(
+                        color: Color(0xFF9A9A9A),
+                        fontFamily: 'Plus Jakarta Sans',
+                      ),
+                    ),
+                  )
+                : ListView(
+                    scrollDirection: Axis.horizontal,
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    children: _pedagangList
+                        .where((p) => p.statusJualan == true)
+                        .map((p) {
+                          return Padding(
+                            padding: const EdgeInsets.only(right: 12),
+                            child: GestureDetector(
+                              onTap: () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
+                                  ),
+                                );
+                              },
+                              child: _buildPedagangCard(
+                                name: p.namaToko ?? p.nama ?? 'Pedagang',
+                                distance: p.lokasi != null && p.lokasi!.isNotEmpty
+                                    ? p.lokasi!
+                                    : 'Tidak ada lokasi',
+                                imagePath:
+                                    'assets/images/tukang_bubur.png', // Placeholder
+                                isDark: isDark,
+                              ),
+                            ),
+                          );
+                        })
+                        .toList(),
+                  ),
           ),
         ],
       ),
@@ -568,12 +644,16 @@ class _ExploreScreenState extends State<ExploreScreen> {
                         size: 12,
                       ),
                       const SizedBox(width: 2),
-                      Text(
-                        distance,
-                        style: TextStyle(
-                          color: distanceColor,
-                          fontSize: 11,
-                          fontFamily: 'Plus Jakarta Sans',
+                      Expanded(
+                        child: Text(
+                          distance,
+                          style: TextStyle(
+                            color: distanceColor,
+                            fontSize: 11,
+                            fontFamily: 'Plus Jakarta Sans',
+                          ),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],

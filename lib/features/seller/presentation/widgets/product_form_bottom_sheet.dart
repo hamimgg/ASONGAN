@@ -27,6 +27,8 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
   late TextEditingController _priceController;
   late TextEditingController _descController;
   late TextEditingController _stokController;
+  late TextEditingController _kategoriController;
+  late TextEditingController _variasiController;
   late bool _isTersedia;
   File? _imageFile;
   final ImagePicker _picker = ImagePicker();
@@ -38,6 +40,8 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
     _priceController = TextEditingController(text: widget.productToEdit?.harga.toString() ?? '');
     _descController = TextEditingController(text: widget.productToEdit?.deskripsi ?? '');
     _stokController = TextEditingController(text: widget.productToEdit?.stok.toString() ?? '0');
+    _kategoriController = TextEditingController(text: widget.productToEdit?.kategori ?? '');
+    _variasiController = TextEditingController(text: widget.productToEdit?.variasi ?? '');
     _isTersedia = widget.productToEdit?.isTersedia ?? true;
     if (widget.productToEdit?.imagePath != null &&
         widget.productToEdit!.imagePath.isNotEmpty &&
@@ -52,6 +56,8 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
     _priceController.dispose();
     _descController.dispose();
     _stokController.dispose();
+    _kategoriController.dispose();
+    _variasiController.dispose();
     super.dispose();
   }
 
@@ -75,6 +81,8 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
         imagePath: _imageFile != null ? _imageFile!.path : (widget.productToEdit?.imagePath ?? ''),
         stok: int.tryParse(_stokController.text) ?? 0,
         isTersedia: _isTersedia,
+        kategori: _kategoriController.text.isEmpty ? 'Umum' : _kategoriController.text,
+        variasi: _variasiController.text,
       );
 
       bool success;
@@ -216,6 +224,26 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
                   _buildTextField(
                     controller: _descController,
                     label: "Deskripsi",
+                    isDark: isDark,
+                    fillColor: inputFill,
+                    borderColor: inputBorder,
+                    textColor: textColor,
+                    subtitleColor: subtitleColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _kategoriController,
+                    label: "Kategori Menu",
+                    isDark: isDark,
+                    fillColor: inputFill,
+                    borderColor: inputBorder,
+                    textColor: textColor,
+                    subtitleColor: subtitleColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTextField(
+                    controller: _variasiController,
+                    label: "Variasi (Saus, Ukuran, dll)",
                     isDark: isDark,
                     fillColor: inputFill,
                     borderColor: inputBorder,

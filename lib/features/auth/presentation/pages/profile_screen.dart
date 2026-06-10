@@ -4,6 +4,7 @@ import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 
@@ -37,6 +38,32 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _switchRole() async {
     final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
+    
+    // Jika user pindah ke mode pedagang dan belum memiliki role pedagang di database, perbarui role-nya
+    if (newMode == 'pedagang' && _user != null) {
+      if (_user!.role == 'pembeli') {
+        final updatedUser = UserModelSql(
+          id: _user!.id,
+          email: _user!.email,
+          password: _user!.password,
+          nama: _user!.nama,
+          telepon: _user!.telepon,
+          role: 'pedagang_dan_pembeli',
+          namaToko: _user!.namaToko ?? _user!.nama,
+          jenisProduk: _user!.jenisProduk,
+          namaMakanan: _user!.namaMakanan,
+          statusJualan: _user!.statusJualan,
+          jamOperasional: _user!.jamOperasional,
+          lokasi: _user!.lokasi,
+        );
+        await DBHelper().updateUser(updatedUser);
+        await AuthService.saveUserSession(updatedUser);
+        setState(() {
+          _user = updatedUser;
+        });
+      }
+    }
+
     await AuthService.setActiveMode(newMode);
 
     if (mounted) {
@@ -56,6 +83,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
         MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
+  }
+
+  Future<void> _showEditProfileDialog() async {
+    if (_user == null) return;
+    
+    final TextEditingController nameController = TextEditingController(text: _user!.nama);
+    final TextEditingController emailController = TextEditingController(text: _user!.email);
+    final TextEditingController phoneController = TextEditingController(text: _user!.telepon);
+
+    await showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          title: const Text('Edit Profil', style: TextStyle(fontFamily: 'Plus Jakarta Sans')),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextField(
+                  controller: nameController,
+                  decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                ),
+                TextField(
+                  controller: emailController,
+                  decoration: const InputDecoration(labelText: 'Email'),
+                ),
+                TextField(
+                  controller: phoneController,
+                  decoration: const InputDecoration(labelText: 'Nomor Telepon'),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text('Batal', style: TextStyle(color: Colors.red)),
+            ),
+            ElevatedButton(
+              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+              onPressed: () async {
+                final updatedUser = UserModelSql(
+                  id: _user!.id,
+                  email: emailController.text,
+                  password: _user!.password,
+                  nama: nameController.text,
+                  telepon: phoneController.text,
+                  role: _user!.role,
+                  namaToko: _user!.namaToko,
+                  jenisProduk: _user!.jenisProduk,
+                  namaMakanan: _user!.namaMakanan,
+                  statusJualan: _user!.statusJualan,
+                  jamOperasional: _user!.jamOperasional,
+                  lokasi: _user!.lokasi,
+                );
+                final success = await DBHelper().updateUser(updatedUser);
+                if (success) {
+                  await AuthService.saveUserSession(updatedUser);
+                  setState(() {
+                    _user = updatedUser;
+                  });
+                  if (context.mounted) Navigator.pop(context);
+                } else {
+                  if (context.mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      const SnackBar(content: Text('Gagal memperbarui profil')),
+                    );
+                  }
+                }
+              },
+              child: const Text('Simpan', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -150,6 +253,18 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 const SizedBox(height: 24),
 
                 // Actions
+                _buildActionItem(
+                  icon: Icons.edit_rounded,
+                  title: "Edit Profil",
+                  subtitle: "Ubah nama, email, atau telepon",
+                  iconColor: AppColors.accent,
+                  textColor: textColor,
+                  subtitleColor: subtitleColor,
+                  cardBg: cardBg,
+                  cardBorder: cardBorder,
+                  onTap: _showEditProfileDialog,
+                ),
+                const SizedBox(height: 12),
                 _buildActionItem(
                   icon: Icons.swap_horiz_rounded,
                   title: "Ganti Role (Switch Mode)",

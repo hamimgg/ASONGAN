@@ -1,7 +1,7 @@
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/seller/model/store_summary_model.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -16,6 +16,9 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   UserModelSql? _user;
   String _activeMode = 'pembeli';
+  int _totalMenu = 0;
+  bool _isStoreOpen = false;
+
   @override
   void initState() {
     super.initState();
@@ -25,10 +28,24 @@ class _HomeScreenState extends State<HomeScreen> {
   Future<void> _loadUserData() async {
     final user = await AuthService.getUserSession();
     final mode = await AuthService.getActiveMode();
+    int totalMenu = 0;
+    bool storeOpen = false;
+
+    if (user != null && user.id != null) {
+      final latestUser = await DBHelper().getUserById(user.id!);
+      if (latestUser != null) {
+        storeOpen = latestUser.statusJualan ?? true;
+      }
+      final products = await DBHelper().getProductsByPedagang(user.id!);
+      totalMenu = products.length;
+    }
+
     if (mounted) {
       setState(() {
         _user = user;
         _activeMode = mode ?? 'pembeli';
+        _totalMenu = totalMenu;
+        _isStoreOpen = storeOpen;
       });
     }
   }
@@ -38,7 +55,6 @@ class _HomeScreenState extends State<HomeScreen> {
     return ValueListenableBuilder(
       valueListenable: isDarkModeNotifier,
       builder: (context, isDark, child) {
-        final data = dummyStoreSummary;
         final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
         final Color subtitleColor = isDark
             ? const Color(0xFF9A9A9A)
@@ -90,9 +106,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: _buildSummaryCard(
                               title: "Status Toko",
-                              value: data.isStoreOpen ? "Buka" : "Tutup",
+                              value: _isStoreOpen ? "Buka" : "Tutup",
                               icon: Icons.storefront_rounded,
-                              valueColor: data.isStoreOpen
+                              valueColor: _isStoreOpen
                                   ? AppColors.statusActive
                                   : AppColors.statusClosed,
                               cardBg: cardBg,
@@ -105,7 +121,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: _buildSummaryCard(
                               title: "Pengunjung",
-                              value: "${data.todayVisitors}",
+                              value: "0",
                               icon: Icons.people_outline_rounded,
                               valueColor: textColor,
                               cardBg: cardBg,
@@ -122,7 +138,7 @@ class _HomeScreenState extends State<HomeScreen> {
                           Expanded(
                             child: _buildSummaryCard(
                               title: "Total Menu",
-                              value: "${data.totalMenu}",
+                              value: "$_totalMenu",
                               icon: Icons.restaurant_menu_rounded,
                               valueColor: textColor,
                               cardBg: cardBg,
@@ -266,7 +282,7 @@ class _HomeScreenState extends State<HomeScreen> {
           const SizedBox(width: 10),
           // Title section
           Text(
-            'Temukan Pedagang',
+            'Temukan Pembeli',
             style: TextStyle(
               color: textColor,
               fontWeight: FontWeight.bold,

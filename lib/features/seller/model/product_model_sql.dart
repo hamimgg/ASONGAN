@@ -7,6 +7,8 @@ class ProductModelSql {
   final String imagePath;
   final int stok;
   final bool isTersedia;
+  final String kategori;
+  final String variasi;
 
   ProductModelSql({
     this.id,
@@ -17,6 +19,8 @@ class ProductModelSql {
     required this.imagePath,
     this.stok = 0,
     this.isTersedia = true,
+    this.kategori = 'Umum',
+    this.variasi = '',
   });
 
   Map<String, dynamic> toMap() {
@@ -29,6 +33,8 @@ class ProductModelSql {
       'image_path': imagePath,
       'stok': stok,
       'is_tersedia': isTersedia ? 1 : 0,
+      'kategori': kategori,
+      'variasi': variasi,
     };
   }
 
@@ -42,6 +48,8 @@ class ProductModelSql {
       imagePath: map['image_path'] ?? '',
       stok: map['stok']?.toInt() ?? 0,
       isTersedia: (map['is_tersedia'] ?? 1) == 1,
+      kategori: map['kategori'] ?? 'Umum',
+      variasi: map['variasi'] ?? '',
     );
   }
 }
