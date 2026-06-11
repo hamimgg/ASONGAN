@@ -1,6 +1,6 @@
 # 🛒 Asongan
 
-> Menghubungkan pedagang kaki lima dengan pembeli di sekitar mereka.
+> Connecting street food vendors with nearby buyers.
 
 ![Flutter](https://img.shields.io/badge/Flutter-3.x-02569B?logo=flutter&logoColor=white)
 ![Dart](https://img.shields.io/badge/Dart-3.x-0175C2?logo=dart&logoColor=white)
@@ -10,76 +10,76 @@
 
 ---
 
-## 📖 Tentang Aplikasi
+## 📖 About
 
-**Asongan** adalah aplikasi mobile berbasis Flutter yang dirancang untuk memberdayakan pedagang kaki lima (PKL) di Indonesia. Aplikasi ini menjadi jembatan antara pedagang dengan pembeli terdekat, memudahkan transaksi dan meningkatkan visibilitas usaha kecil di lingkungan sekitar.
+**Asongan** is a Flutter-based mobile application designed to empower street food vendors (*pedagang kaki lima*) in Indonesia. The app bridges the gap between vendors and nearby buyers, helping small businesses gain visibility and connect with customers in their local area.
 
-Aplikasi ini dikembangkan sebagai bentuk kepedulian terhadap ekosistem UMKM lokal, khususnya pedagang asongan yang selama ini kesulitan menjangkau pelanggan baru.
-
----
-
-## ✨ Fitur Utama
-
-### Untuk Pembeli
-- 🔍 Temukan pedagang dan menu di sekitar lokasi
-- 📋 Lihat daftar menu lengkap beserta harga
-- 💬 Hubungi pedagang langsung via WhatsApp
-- 👤 Kelola profil akun pribadi
-
-### Untuk Pedagang (Seller)
-- 🏪 Kelola profil toko (nama, deskripsi, lokasi)
-- 🍜 Manajemen menu (tambah, edit, hapus)
-- 📸 Upload foto menu dari galeri atau kamera
-- 📊 Dashboard ringkasan toko
+Built with a social-impact mission at its core, Asongan aims to modernize the way street vendors operate — giving them a digital presence without the complexity of large e-commerce platforms.
 
 ---
 
-## 🛠️ Teknologi yang Digunakan
+## ✨ Features
 
-| Teknologi | Kegunaan |
+### For Buyers
+- 🔍 Discover vendors and menus nearby
+- 📋 Browse full menu listings with prices
+- 💬 Contact vendors directly via WhatsApp
+- 👤 Manage personal account profile
+
+### For Sellers (Vendors)
+- 🏪 Manage store profile (name, description, location)
+- 🍜 Full menu management (add, edit, delete)
+- 📸 Upload menu photos from gallery or camera
+- 📊 Seller dashboard overview
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology | Purpose |
 |---|---|
-| Flutter | Framework utama UI |
-| Dart | Bahasa pemrograman |
-| sqflite | Database lokal (SQLite) |
-| image_picker | Pemilihan foto dari galeri/kamera |
-| shared_preferences | Penyimpanan preferensi pengguna |
-| path_provider | Manajemen path file lokal |
+| Flutter | Main UI framework |
+| Dart | Programming language |
+| sqflite | Local database (SQLite) |
+| image_picker | Photo selection from gallery/camera |
+| shared_preferences | User preference storage |
+| path_provider | Local file path management |
 
 ---
 
-## 📁 Struktur Proyek
+## 📁 Project Structure
 
 ```
 lib/
-├── main.dart               # Entry point aplikasi
+├── main.dart               # App entry point
 ├── models/
-│   ├── pedagang_model.dart # Model data pedagang
-│   └── menu_model.dart     # Model data menu
+│   ├── pedagang_model.dart # Vendor data model
+│   └── menu_model.dart     # Menu data model
 ├── database/
-│   └── db_helper.dart      # Helper SQLite (sqflite)
+│   └── db_helper.dart      # SQLite helper (sqflite)
 ├── screens/
-│   ├── buyer/              # Halaman untuk pembeli
-│   └── seller/             # Halaman untuk pedagang
+│   ├── buyer/              # Buyer-side screens
+│   └── seller/             # Seller-side screens
 ├── widgets/
-│   ├── app_drawer.dart     # Drawer navigasi & role switching
-│   └── main_wrapper.dart   # Wrapper navigasi utama (IndexedStack)
+│   ├── app_drawer.dart     # Navigation drawer & role switching
+│   └── main_wrapper.dart   # Main navigation wrapper (IndexedStack)
 └── utils/
-    └── constants.dart      # Konstanta aplikasi
+    └── constants.dart      # App-wide constants
 ```
 
 ---
 
-## 🚀 Cara Menjalankan
+## 🚀 Getting Started
 
-### Prasyarat
+### Prerequisites
 - Flutter SDK `>=3.0.0`
 - Dart SDK `>=3.0.0`
-- Android Studio / VS Code
-- Android Emulator atau perangkat fisik (Android 6.0+)
+- Android Studio or VS Code
+- Android Emulator or physical device (Android 6.0+)
 
-### Langkah Instalasi
+### Installation
 
-1. Clone repository ini
+1. Clone the repository
    ```bash
    git clone https://github.com/username/asongan.git
    cd asongan
@@ -90,7 +90,7 @@ lib/
    flutter pub get
    ```
 
-3. Jalankan aplikasi
+3. Run the app
    ```bash
    flutter run
    ```
@@ -98,67 +98,67 @@ lib/
 ### Build APK
 
 ```bash
-# Debug (untuk testing)
+# Debug build (for testing)
 flutter build apk --debug
 
-# Release (untuk distribusi)
+# Release build (for distribution)
 flutter build apk --release
 ```
 
-File APK tersedia di: `build/app/outputs/flutter-apk/`
+Output: `build/app/outputs/flutter-apk/`
 
 ---
 
-## 🎨 Desain & Branding
+## 🎨 Design & Branding
 
-| Elemen | Nilai |
+| Element | Value |
 |---|---|
-| Warna Primer | `#F5A623` (Orange) |
-| Warna Sekunder | `#1C1C1E` (Near Black) |
+| Primary Color | `#F5A623` (Orange) |
+| Secondary Color | `#1C1C1E` (Near Black) |
 | Font | Default Flutter (Roboto) |
 
 ---
 
-## 🗄️ Skema Database
+## 🗄️ Database Schema
 
-### Tabel `pedagang`
-| Kolom | Tipe | Keterangan |
+### Table `pedagang` (vendors)
+| Column | Type | Description |
 |---|---|---|
 | id | INTEGER | Primary key (autoincrement) |
-| nama | TEXT | Nama pedagang |
-| deskripsi | TEXT | Deskripsi toko |
-| lokasi | TEXT | Lokasi berjualan |
-| foto | TEXT | Path foto profil |
+| nama | TEXT | Vendor name |
+| deskripsi | TEXT | Store description |
+| lokasi | TEXT | Selling location |
+| foto | TEXT | Profile photo path |
 
-### Tabel `menu`
-| Kolom | Tipe | Keterangan |
+### Table `menu`
+| Column | Type | Description |
 |---|---|---|
 | id | INTEGER | Primary key (autoincrement) |
-| pedagang_id | INTEGER | Foreign key ke tabel pedagang |
-| nama | TEXT | Nama menu |
-| harga | INTEGER | Harga menu |
-| deskripsi | TEXT | Deskripsi menu |
-| foto | TEXT | Path foto menu |
+| pedagang_id | INTEGER | Foreign key to vendors table |
+| nama | TEXT | Menu item name |
+| harga | INTEGER | Price |
+| deskripsi | TEXT | Item description |
+| foto | TEXT | Menu photo path |
 
 ---
 
-## 👥 Kontributor
+## 👥 Contributors
 
-| Nama | Peran |
+| Name | Role |
 |---|---|
-| [Nama Kamu] | Developer |
+| [Your Name] | Developer |
 
 ---
 
-## 📄 Lisensi
+## 📄 License
 
-Proyek ini menggunakan lisensi [MIT](LICENSE).
+This project is licensed under the [MIT License](LICENSE).
 
 ---
 
 ## 🙏 Acknowledgements
 
-Aplikasi ini dibangun dengan semangat untuk memberdayakan pedagang kaki lima Indonesia. Terima kasih kepada seluruh PKL yang menginspirasi lahirnya aplikasi ini.
+This app was built with a genuine passion for supporting Indonesia's street vendor community. Thank you to every *pedagang kaki lima* who inspired this project.
 
 ---
 
