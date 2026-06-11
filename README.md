@@ -115,7 +115,7 @@ Output: `build/app/outputs/flutter-apk/`
 |---|---|
 | Primary Color | `#F5A623` (Orange) |
 | Secondary Color | `#1C1C1E` (Near Black) |
-| Font | Default Flutter (Roboto) |
+| Font | Plus Jakarta Sans |
 
 ---
 
