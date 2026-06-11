@@ -146,7 +146,7 @@ File APK tersedia di: `build/app/outputs/flutter-apk/`
 
 | Nama | Peran |
 |---|---|
-| [Nama Kamu] | Developer |
+| [Hamim Abdillah] | Developer |
 
 ---
 
