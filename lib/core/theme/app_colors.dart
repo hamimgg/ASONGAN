@@ -9,9 +9,13 @@ class AppColors {
   static const Color accent = Color(0xFFF5A623);
   static const Color accentDark = Color(0xFF1C1C1E);
 
+  // --- appBar ---
+  static Color appBarBg(bool isDark) =>
+      isDark ? const Color(0xFF1C1C1E) : const Color(0xFFFFFfff);
+
   // --- Scaffold / Background ---
   static Color scaffoldBg(bool isDark) =>
-      isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF8F9FA);
+      isDark ? const Color(0xFF1C1C1E) : const Color(0xFFFFF8F4);
 
   static Color scaffoldBgPure(bool isDark) =>
       isDark ? const Color(0xFF1C1C1E) : Colors.white;

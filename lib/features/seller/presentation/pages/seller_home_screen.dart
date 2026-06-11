@@ -63,7 +63,10 @@ class _HomeScreenState extends State<HomeScreen> {
         final Color cardBorder = isDark
             ? const Color(0xFF3A3A3C)
             : const Color(0xFFE2E8F0);
+        final Color scaffoldBg = AppColors.scaffoldBg(isDark);
+
         return Scaffold(
+          backgroundColor: scaffoldBg,
           body: Column(
             children: [
               _buildAppBar(context, isDark),

@@ -1,3 +1,4 @@
+import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
@@ -48,9 +49,7 @@ class _OrderScreenState extends State<OrderScreen> {
     return ValueListenableBuilder<bool>(
       valueListenable: isDarkModeNotifier,
       builder: (context, isDark, child) {
-        final Color scaffoldBg = isDark
-            ? const Color(0xFF1C1C1E)
-            : const Color(0xFFF8F9FA);
+        final Color scaffoldBg = AppColors.scaffoldBg(isDark);
 
         return Scaffold(
           backgroundColor: scaffoldBg,

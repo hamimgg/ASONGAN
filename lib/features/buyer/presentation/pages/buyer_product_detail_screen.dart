@@ -26,22 +26,37 @@ class BuyerProductDetailScreen extends StatelessWidget {
         final Color textColor = AppColors.textPrimary(isDark);
         final Color subtitleColor = AppColors.textSubtitle(isDark);
         final Color cardBorder = AppColors.divider(isDark);
-        
+
         final bool isReal = dbProduct != null;
-        
-        final String pName = isReal ? dbProduct!.namaProduk : dummyProduct!.name;
-        final double pPrice = isReal ? dbProduct!.harga : dummyProduct!.price.toDouble();
-        final String pImage = isReal ? dbProduct!.imagePath : dummyProduct!.imagePath;
-        final bool pIsLocal = isReal && pImage.isNotEmpty && !pImage.startsWith('assets/');
-        final String pDesc = isReal 
-            ? (dbProduct!.deskripsi ?? "Tidak ada deskripsi.") 
+
+        final String pName = isReal
+            ? dbProduct!.namaProduk
+            : dummyProduct!.name;
+        final double pPrice = isReal
+            ? dbProduct!.harga
+            : dummyProduct!.price.toDouble();
+        final String pImage = isReal
+            ? dbProduct!.imagePath
+            : dummyProduct!.imagePath;
+        final bool pIsLocal =
+            isReal && pImage.isNotEmpty && !pImage.startsWith('assets/');
+        final String pDesc = isReal
+            ? (dbProduct!.deskripsi ?? "Tidak ada deskripsi.")
             : "Nikmati jajanan khas yang lezat ini. Dibuat dengan bahan-bahan pilihan yang segar.";
-            
-        final String pKategori = isReal ? (dbProduct!.kategori ?? "Umum") : "Makanan ringan";
-        final String pVariasi = isReal ? (dbProduct!.variasi ?? "Tidak ada variasi") : "Standar";
+
+        final String pKategori = isReal
+            ? (dbProduct!.kategori ?? "Umum")
+            : "Makanan ringan";
+        final String pVariasi = isReal
+            ? (dbProduct!.variasi ?? "Tidak ada variasi")
+            : "Standar";
         final bool isAvailable = isReal ? dbProduct!.isTersedia : true;
 
-        final formatCurrency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+        final formatCurrency = NumberFormat.currency(
+          locale: 'id_ID',
+          symbol: 'Rp ',
+          decimalDigits: 0,
+        );
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -49,12 +64,21 @@ class BuyerProductDetailScreen extends StatelessWidget {
             backgroundColor: scaffoldBg,
             elevation: 0,
             leading: IconButton(
-              icon: Icon(Icons.arrow_back_ios_new_rounded, color: textColor, size: 20),
+              icon: Icon(
+                Icons.arrow_back_ios_new_rounded,
+                color: textColor,
+                size: 20,
+              ),
               onPressed: () => Navigator.pop(context),
             ),
             title: Text(
               "Detail Produk",
-              style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Plus Jakarta Sans'),
+              style: TextStyle(
+                color: textColor,
+                fontSize: 16,
+                fontWeight: FontWeight.bold,
+                fontFamily: 'Plus Jakarta Sans',
+              ),
             ),
             centerTitle: true,
           ),
@@ -72,11 +96,15 @@ class BuyerProductDetailScreen extends StatelessWidget {
                         color: AppColors.inputFill(isDark),
                         child: pImage.isNotEmpty
                             ? (pIsLocal
-                                ? Image.file(File(pImage), fit: BoxFit.cover)
-                                : Image.asset(pImage, fit: BoxFit.cover))
-                            : Icon(Icons.fastfood_rounded, color: subtitleColor, size: 80),
+                                  ? Image.file(File(pImage), fit: BoxFit.cover)
+                                  : Image.asset(pImage, fit: BoxFit.cover))
+                            : Icon(
+                                Icons.fastfood_rounded,
+                                color: subtitleColor,
+                                size: 80,
+                              ),
                       ),
-                      
+
                       Padding(
                         padding: const EdgeInsets.all(20.0),
                         child: Column(
@@ -99,13 +127,25 @@ class BuyerProductDetailScreen extends StatelessWidget {
                                 ),
                                 if (!isAvailable)
                                   Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 10,
+                                      vertical: 6,
+                                    ),
                                     decoration: BoxDecoration(
-                                      color: AppColors.statusClosed.withValues(alpha: 0.1),
+                                      color: AppColors.statusClosed.withValues(
+                                        alpha: 0.1,
+                                      ),
                                       borderRadius: BorderRadius.circular(8),
                                     ),
-                                    child: const Text("Habis", style: TextStyle(color: AppColors.statusClosed, fontWeight: FontWeight.bold, fontSize: 12)),
-                                  )
+                                    child: const Text(
+                                      "Habis",
+                                      style: TextStyle(
+                                        color: AppColors.statusClosed,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
                               ],
                             ),
                             const SizedBox(height: 8),
@@ -119,16 +159,24 @@ class BuyerProductDetailScreen extends StatelessWidget {
                               ),
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // Info Tags
                             Row(
                               children: [
-                                _buildInfoTag(Icons.category_rounded, pKategori, isDark),
+                                _buildInfoTag(
+                                  Icons.category_rounded,
+                                  pKategori,
+                                  isDark,
+                                ),
                                 const SizedBox(width: 12),
-                                _buildInfoTag(Icons.tune_rounded, pVariasi, isDark),
+                                _buildInfoTag(
+                                  Icons.tune_rounded,
+                                  pVariasi,
+                                  isDark,
+                                ),
                               ],
                             ),
-                            
+
                             const SizedBox(height: 24),
                             Text(
                               "Deskripsi",
@@ -156,7 +204,7 @@ class BuyerProductDetailScreen extends StatelessWidget {
                   ),
                 ),
               ),
-              
+
               // Bottom Action Bar
               Container(
                 padding: EdgeInsets.only(
@@ -179,7 +227,10 @@ class BuyerProductDetailScreen extends StatelessWidget {
                         borderRadius: BorderRadius.circular(12),
                       ),
                       child: const Center(
-                        child: Icon(Icons.favorite_border_rounded, color: AppColors.accent),
+                        child: Icon(
+                          Icons.favorite_border_rounded,
+                          color: AppColors.accent,
+                        ),
                       ),
                     ),
                     const SizedBox(width: 16),
@@ -187,20 +238,28 @@ class BuyerProductDetailScreen extends StatelessWidget {
                       child: SizedBox(
                         height: 50,
                         child: ElevatedButton(
-                          onPressed: isAvailable ? () {
-                            ScaffoldMessenger.of(context).showSnackBar(
-                              SnackBar(
-                                content: Text('$pName berhasil ditambahkan ke pesanan!'),
-                                backgroundColor: const Color(0xFF4CD964),
-                                behavior: SnackBarBehavior.floating,
-                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                              ),
-                            );
-                          } : null,
+                          onPressed: isAvailable
+                              ? () {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    SnackBar(
+                                      content: Text(
+                                        '$pName berhasil ditambahkan ke pesanan!',
+                                      ),
+                                      backgroundColor: const Color(0xFF4CD964),
+                                      behavior: SnackBarBehavior.floating,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                  );
+                                }
+                              : null,
                           style: ElevatedButton.styleFrom(
                             backgroundColor: AppColors.accent,
                             foregroundColor: Colors.white,
-                            disabledBackgroundColor: subtitleColor.withValues(alpha: 0.3),
+                            disabledBackgroundColor: subtitleColor.withValues(
+                              alpha: 0.3,
+                            ),
                             shape: RoundedRectangleBorder(
                               borderRadius: BorderRadius.circular(12),
                             ),

@@ -2,7 +2,6 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -47,7 +46,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       final latestUser = await DBHelper().getUserById(user.id!);
       if (latestUser != null) {
         final products = await DBHelper().getProductsByPedagang(user.id!);
-        
+
         List<String> bestSelling = [];
         for (int i = 0; i < products.length && i < 3; i++) {
           bestSelling.add(products[i].namaProduk);
@@ -65,7 +64,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
           _statusJualan = latestUser.statusJualan ?? true;
           _jamController.text = latestUser.jamOperasional ?? '';
           _lokasiController.text = latestUser.lokasi ?? '';
-          _namaTokoController.text = latestUser.namaToko ?? latestUser.nama ?? '';
+          _namaTokoController.text =
+              latestUser.namaToko ?? latestUser.nama ?? '';
           _bestSellingMenu = bestSelling;
           _lowStockMenu = lowStock;
           _isLoading = false;
@@ -80,7 +80,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
 
   Future<void> _saveSettings() async {
     if (_currentUser == null) return;
-    
+
     final updatedUser = UserModelSql(
       id: _currentUser!.id,
       email: _currentUser!.email,
@@ -135,8 +135,10 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       );
 
       if (endTime != null) {
-        final startFormat = '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
-        final endFormat = '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
+        final startFormat =
+            '${startTime.hour.toString().padLeft(2, '0')}:${startTime.minute.toString().padLeft(2, '0')}';
+        final endFormat =
+            '${endTime.hour.toString().padLeft(2, '0')}:${endTime.minute.toString().padLeft(2, '0')}';
         setState(() {
           _jamController.text = '$startFormat - $endFormat';
         });
@@ -154,8 +156,12 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         final Color cardBorder = AppColors.cardBorder(isDark);
         final Color textColor = AppColors.textPrimary(isDark);
         final Color subtitleColor = AppColors.textSubtitle(isDark);
-        final Color inputFill = isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9);
-        final Color inputBorder = isDark ? const Color(0xFF3A3A3C) : const Color(0xFFE2E8F0);
+        final Color inputFill = isDark
+            ? const Color(0xFF1C1C1E)
+            : const Color(0xFFF1F5F9);
+        final Color inputBorder = isDark
+            ? const Color(0xFF3A3A3C)
+            : const Color(0xFFE2E8F0);
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -164,16 +170,31 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               _buildAppBar(context, isDark),
               Expanded(
                 child: _isLoading
-                    ? const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                    ? const Center(
+                        child: CircularProgressIndicator(
+                          color: AppColors.accent,
+                        ),
+                      )
                     : SingleChildScrollView(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
+                        ),
                         child: Column(
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             // Card Pengaturan Toko (CRUD)
-                            _buildSettingsCard(isDark, cardBg, cardBorder, textColor, subtitleColor, inputFill, inputBorder),
+                            _buildSettingsCard(
+                              isDark,
+                              cardBg,
+                              cardBorder,
+                              textColor,
+                              subtitleColor,
+                              inputFill,
+                              inputBorder,
+                            ),
                             const SizedBox(height: 24),
-                            
+
                             // Menu Terlaris
                             _buildSectionHeader(
                               "Menu Terlaris",
@@ -190,7 +211,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                               iconColor: AppColors.accent,
                             ),
                             const SizedBox(height: 24),
-                            
+
                             // Stok Menipis
                             _buildSectionHeader(
                               "Stok Menipis",
@@ -238,7 +259,11 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         children: [
           Row(
             children: [
-              const Icon(Icons.store_rounded, color: AppColors.accent, size: 22),
+              const Icon(
+                Icons.store_rounded,
+                color: AppColors.accent,
+                size: 22,
+              ),
               const SizedBox(width: 8),
               Text(
                 "Pengaturan Toko",
@@ -252,7 +277,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             ],
           ),
           const Divider(height: 24),
-          
+
           // Nama Toko
           Text(
             "Nama Toko",
@@ -266,13 +291,23 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _namaTokoController,
-            style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+            style: TextStyle(
+              color: textColor,
+              fontSize: 14,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
             decoration: InputDecoration(
               hintText: "Contoh: Warung Berkah",
-              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
+              hintStyle: TextStyle(
+                color: subtitleColor.withValues(alpha: 0.6),
+                fontSize: 14,
+              ),
               filled: true,
               fillColor: inputFill,
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: inputBorder),
@@ -283,12 +318,15 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               ),
               focusedBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
+                ),
               ),
             ),
           ),
           const SizedBox(height: 16),
-          
+
           // Switch Status Jualan
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -310,7 +348,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                     children: [
                       Icon(
                         Icons.circle,
-                        color: _statusJualan ? const Color(0xFF4CD964) : const Color(0xFFFF3B30),
+                        color: _statusJualan
+                            ? const Color(0xFF4CD964)
+                            : const Color(0xFFFF3B30),
                         size: 10,
                       ),
                       const SizedBox(width: 6),
@@ -329,9 +369,13 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               Switch(
                 value: _statusJualan,
                 activeThumbColor: const Color(0xFF4CD964),
-                activeTrackColor: const Color(0xFF4CD964).withValues(alpha: 0.3),
+                activeTrackColor: const Color(
+                  0xFF4CD964,
+                ).withValues(alpha: 0.3),
                 inactiveThumbColor: const Color(0xFFFF3B30),
-                inactiveTrackColor: const Color(0xFFFF3B30).withValues(alpha: 0.3),
+                inactiveTrackColor: const Color(
+                  0xFFFF3B30,
+                ).withValues(alpha: 0.3),
                 onChanged: (val) {
                   setState(() => _statusJualan = val);
                 },
@@ -357,14 +401,28 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             child: IgnorePointer(
               child: TextField(
                 controller: _jamController,
-                style: TextStyle(color: textColor, fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+                style: TextStyle(
+                  color: textColor,
+                  fontSize: 14,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
                 decoration: InputDecoration(
                   hintText: "Contoh: 17:00 - 23:00",
-                  hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.6), fontSize: 14),
+                  hintStyle: TextStyle(
+                    color: subtitleColor.withValues(alpha: 0.6),
+                    fontSize: 14,
+                  ),
                   filled: true,
                   fillColor: inputFill,
-                  contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                  suffixIcon: Icon(Icons.access_time_rounded, color: subtitleColor, size: 20),
+                  contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16,
+                    vertical: 12,
+                  ),
+                  suffixIcon: Icon(
+                    Icons.access_time_rounded,
+                    color: subtitleColor,
+                    size: 20,
+                  ),
                   border: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
                     borderSide: BorderSide(color: inputBorder),
@@ -375,7 +433,10 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                   ),
                   focusedBorder: OutlineInputBorder(
                     borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
+                    borderSide: const BorderSide(
+                      color: AppColors.accent,
+                      width: 1.5,
+                    ),
                   ),
                 ),
               ),
@@ -397,20 +458,32 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
           TextField(
             controller: _lokasiController,
             enabled: false,
-            style: TextStyle(color: textColor.withValues(alpha: 0.5), fontSize: 14, fontFamily: 'Plus Jakarta Sans'),
+            style: TextStyle(
+              color: textColor.withValues(alpha: 0.5),
+              fontSize: 14,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
             decoration: InputDecoration(
               hintText: "Lokasi GPS belum aktif",
-              hintStyle: TextStyle(color: subtitleColor.withValues(alpha: 0.4), fontSize: 14),
+              hintStyle: TextStyle(
+                color: subtitleColor.withValues(alpha: 0.4),
+                fontSize: 14,
+              ),
               filled: true,
               fillColor: inputFill.withValues(alpha: 0.5),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 12,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: inputBorder),
               ),
               disabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(color: inputBorder.withValues(alpha: 0.5)),
+                borderSide: BorderSide(
+                  color: inputBorder.withValues(alpha: 0.5),
+                ),
               ),
             ),
           ),
@@ -424,7 +497,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: AppColors.accent,
                 foregroundColor: AppColors.accentDark,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
                 elevation: 0,
               ),
               onPressed: _saveSettings,
@@ -548,7 +623,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         itemCount: items.length,
-        separatorBuilder: (context, index) => Divider(color: cardBorder, height: 1),
+        separatorBuilder: (context, index) =>
+            Divider(color: cardBorder, height: 1),
         itemBuilder: (context, index) {
           return ListTile(
             leading: Icon(icon, color: iconColor, size: 18),

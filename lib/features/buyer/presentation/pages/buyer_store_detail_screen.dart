@@ -4,8 +4,8 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_product_detail_screen.dart';
+import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
@@ -14,11 +14,7 @@ class BuyerStoreDetailScreen extends StatefulWidget {
   final UserModelSql? dbSeller;
   final NearbySeller? dummySeller;
 
-  const BuyerStoreDetailScreen({
-    super.key,
-    this.dbSeller,
-    this.dummySeller,
-  });
+  const BuyerStoreDetailScreen({super.key, this.dbSeller, this.dummySeller});
 
   @override
   State<BuyerStoreDetailScreen> createState() => _BuyerStoreDetailScreenState();
@@ -37,7 +33,9 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
 
   Future<void> _loadProducts() async {
     if (widget.dbSeller != null && widget.dbSeller!.id != null) {
-      final products = await DBHelper().getProductsByPedagang(widget.dbSeller!.id!);
+      final products = await DBHelper().getProductsByPedagang(
+        widget.dbSeller!.id!,
+      );
       setState(() {
         _dbProducts = products;
       });
@@ -65,29 +63,34 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
         final Color cardBorder = AppColors.cardBorder(isDark);
 
         final bool isReal = widget.dbSeller != null;
-        
+
         final String storeName = isReal
-            ? ((widget.dbSeller!.namaToko != null && widget.dbSeller!.namaToko!.isNotEmpty) 
-                ? widget.dbSeller!.namaToko! 
-                : (widget.dbSeller!.nama ?? 'Pedagang'))
+            ? ((widget.dbSeller!.namaToko != null &&
+                      widget.dbSeller!.namaToko!.isNotEmpty)
+                  ? widget.dbSeller!.namaToko!
+                  : (widget.dbSeller!.nama ?? 'Pedagang'))
             : widget.dummySeller!.name;
-            
+
         final bool isSelling = isReal
             ? (widget.dbSeller!.statusJualan == true)
             : widget.dummySeller!.isSelling;
-            
+
         final String distance = isReal
-            ? ((widget.dbSeller!.lokasi != null && widget.dbSeller!.lokasi!.isNotEmpty) 
-                ? widget.dbSeller!.lokasi! 
-                : "Lokasi tidak diketahui")
+            ? ((widget.dbSeller!.lokasi != null &&
+                      widget.dbSeller!.lokasi!.isNotEmpty)
+                  ? widget.dbSeller!.lokasi!
+                  : "Lokasi tidak diketahui")
             : widget.dummySeller!.distance;
-            
+
         final double rating = isReal ? 4.8 : widget.dummySeller!.rating;
-        final String imagePath = isReal ? 'assets/images/tukang_bubur.png' : widget.dummySeller!.imagePath;
-        
+        final String imagePath = isReal
+            ? 'assets/images/tukang_bubur.png'
+            : widget.dummySeller!.imagePath;
+
         // Fallback info
         const String since = "2024";
-        const String aboutStore = "Toko keliling terpercaya, menyajikan jajanan enak dan bersih setiap harinya. Melayani pesanan di sekitar area ini dengan cepat.";
+        const String aboutStore =
+            "Toko keliling terpercaya, menyajikan jajanan enak dan bersih setiap harinya. Melayani pesanan di sekitar area ini dengan cepat.";
 
         return Scaffold(
           backgroundColor: scaffoldBg,
@@ -104,7 +107,11 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                       color: Colors.black.withValues(alpha: 0.5),
                       shape: BoxShape.circle,
                     ),
-                    child: const Icon(Icons.arrow_back_ios_new_rounded, color: Colors.white, size: 18),
+                    child: const Icon(
+                      Icons.arrow_back_ios_new_rounded,
+                      color: Colors.white,
+                      size: 18,
+                    ),
                   ),
                   onPressed: () => Navigator.pop(context),
                 ),
@@ -112,10 +119,7 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(
-                        imagePath,
-                        fit: BoxFit.cover,
-                      ),
+                      Image.asset(imagePath, fit: BoxFit.cover),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
@@ -162,15 +166,26 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                 Row(
                                   children: [
                                     Container(
-                                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 8,
+                                        vertical: 4,
+                                      ),
                                       decoration: BoxDecoration(
-                                        color: isSelling ? AppColors.statusActive.withValues(alpha: 0.15) : AppColors.statusClosed.withValues(alpha: 0.15),
+                                        color: isSelling
+                                            ? AppColors.statusActive.withValues(
+                                                alpha: 0.15,
+                                              )
+                                            : AppColors.statusClosed.withValues(
+                                                alpha: 0.15,
+                                              ),
                                         borderRadius: BorderRadius.circular(20),
                                       ),
                                       child: Text(
                                         isSelling ? "Buka" : "Tutup",
                                         style: TextStyle(
-                                          color: isSelling ? AppColors.statusActive : AppColors.statusClosed,
+                                          color: isSelling
+                                              ? AppColors.statusActive
+                                              : AppColors.statusClosed,
                                           fontSize: 12,
                                           fontWeight: FontWeight.bold,
                                           fontFamily: 'Plus Jakarta Sans',
@@ -178,18 +193,33 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                       ),
                                     ),
                                     const SizedBox(width: 12),
-                                    Icon(Icons.star_rounded, color: AppColors.accent, size: 16),
+                                    Icon(
+                                      Icons.star_rounded,
+                                      color: AppColors.accent,
+                                      size: 16,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       rating.toString(),
-                                      style: TextStyle(color: textColor, fontWeight: FontWeight.bold, fontSize: 13),
+                                      style: TextStyle(
+                                        color: textColor,
+                                        fontWeight: FontWeight.bold,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                     const SizedBox(width: 12),
-                                    Icon(Icons.access_time_rounded, color: subtitleColor, size: 14),
+                                    Icon(
+                                      Icons.access_time_rounded,
+                                      color: subtitleColor,
+                                      size: 14,
+                                    ),
                                     const SizedBox(width: 4),
                                     Text(
                                       "Sejak $since",
-                                      style: TextStyle(color: subtitleColor, fontSize: 13),
+                                      style: TextStyle(
+                                        color: subtitleColor,
+                                        fontSize: 13,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -201,12 +231,20 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                       const SizedBox(height: 16),
                       Row(
                         children: [
-                          Icon(Icons.location_on_rounded, color: subtitleColor, size: 16),
+                          Icon(
+                            Icons.location_on_rounded,
+                            color: subtitleColor,
+                            size: 16,
+                          ),
                           const SizedBox(width: 6),
                           Expanded(
                             child: Text(
                               distance,
-                              style: TextStyle(color: subtitleColor, fontSize: 13, fontFamily: 'Plus Jakarta Sans'),
+                              style: TextStyle(
+                                color: subtitleColor,
+                                fontSize: 13,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
                             ),
                           ),
                         ],
@@ -214,21 +252,40 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                       const SizedBox(height: 24),
                       Text(
                         "Tentang Toko",
-                        style: TextStyle(color: textColor, fontSize: 16, fontWeight: FontWeight.bold, fontFamily: 'Plus Jakarta Sans'),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
                       ),
                       const SizedBox(height: 8),
                       Text(
                         aboutStore,
-                        style: TextStyle(color: subtitleColor, fontSize: 13, height: 1.5, fontFamily: 'Plus Jakarta Sans'),
+                        style: TextStyle(
+                          color: subtitleColor,
+                          fontSize: 13,
+                          height: 1.5,
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
                       ),
                       const SizedBox(height: 32),
                       Text(
                         "Menu Pilihan",
-                        style: TextStyle(color: textColor, fontSize: 18, fontWeight: FontWeight.bold, fontFamily: 'Plus Jakarta Sans'),
+                        style: TextStyle(
+                          color: textColor,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                          fontFamily: 'Plus Jakarta Sans',
+                        ),
                       ),
                       const SizedBox(height: 16),
                       if (_isLoading)
-                        const Center(child: CircularProgressIndicator(color: AppColors.accent))
+                        const Center(
+                          child: CircularProgressIndicator(
+                            color: AppColors.accent,
+                          ),
+                        )
                       else if (_dbProducts.isEmpty && _dummyProducts.isEmpty)
                         Center(
                           child: Padding(
@@ -244,20 +301,24 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
-                          itemCount: isReal ? _dbProducts.length : _dummyProducts.length,
+                          itemCount: isReal
+                              ? _dbProducts.length
+                              : _dummyProducts.length,
                           itemBuilder: (context, index) {
                             String pName;
                             double pPrice;
                             String pImage;
                             bool pIsLocal;
                             bool pTersedia = true;
-                            
+
                             if (isReal) {
                               final p = _dbProducts[index];
                               pName = p.namaProduk;
                               pPrice = p.harga;
                               pImage = p.imagePath;
-                              pIsLocal = pImage.isNotEmpty && !pImage.startsWith('assets/');
+                              pIsLocal =
+                                  pImage.isNotEmpty &&
+                                  !pImage.startsWith('assets/');
                               pTersedia = p.isTersedia;
                             } else {
                               final p = _dummyProducts[index];
@@ -267,17 +328,26 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                               pIsLocal = false;
                             }
 
-                            final formatCurrency = NumberFormat.currency(locale: 'id_ID', symbol: 'Rp ', decimalDigits: 0);
+                            final formatCurrency = NumberFormat.currency(
+                              locale: 'id_ID',
+                              symbol: 'Rp ',
+                              decimalDigits: 0,
+                            );
 
                             return GestureDetector(
                               onTap: () {
                                 Navigator.push(
                                   context,
                                   MaterialPageRoute(
-                                    builder: (context) => BuyerProductDetailScreen(
-                                      dbProduct: isReal ? _dbProducts[index] : null,
-                                      dummyProduct: !isReal ? _dummyProducts[index] : null,
-                                    ),
+                                    builder: (context) =>
+                                        BuyerProductDetailScreen(
+                                          dbProduct: isReal
+                                              ? _dbProducts[index]
+                                              : null,
+                                          dummyProduct: !isReal
+                                              ? _dummyProducts[index]
+                                              : null,
+                                        ),
                                   ),
                                 );
                               },
@@ -300,17 +370,29 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                       ),
                                       child: pImage.isNotEmpty
                                           ? ClipRRect(
-                                              borderRadius: BorderRadius.circular(12),
+                                              borderRadius:
+                                                  BorderRadius.circular(12),
                                               child: pIsLocal
-                                                  ? Image.file(File(pImage), fit: BoxFit.cover)
-                                                  : Image.asset(pImage, fit: BoxFit.cover),
+                                                  ? Image.file(
+                                                      File(pImage),
+                                                      fit: BoxFit.cover,
+                                                    )
+                                                  : Image.asset(
+                                                      pImage,
+                                                      fit: BoxFit.cover,
+                                                    ),
                                             )
-                                          : Icon(Icons.fastfood_rounded, color: subtitleColor, size: 30),
+                                          : Icon(
+                                              Icons.fastfood_rounded,
+                                              color: subtitleColor,
+                                              size: 30,
+                                            ),
                                     ),
                                     const SizedBox(width: 16),
                                     Expanded(
                                       child: Column(
-                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
                                         children: [
                                           Text(
                                             pName,
@@ -334,23 +416,42 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                           const SizedBox(height: 6),
                                           if (!pTersedia)
                                             Container(
-                                              padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                    horizontal: 6,
+                                                    vertical: 2,
+                                                  ),
                                               decoration: BoxDecoration(
-                                                color: AppColors.statusClosed.withValues(alpha: 0.1),
-                                                borderRadius: BorderRadius.circular(4),
+                                                color: AppColors.statusClosed
+                                                    .withValues(alpha: 0.1),
+                                                borderRadius:
+                                                    BorderRadius.circular(4),
                                               ),
-                                              child: const Text("Habis", style: TextStyle(color: AppColors.statusClosed, fontSize: 10, fontWeight: FontWeight.bold)),
-                                            )
+                                              child: const Text(
+                                                "Habis",
+                                                style: TextStyle(
+                                                  color: AppColors.statusClosed,
+                                                  fontSize: 10,
+                                                  fontWeight: FontWeight.bold,
+                                                ),
+                                              ),
+                                            ),
                                         ],
                                       ),
                                     ),
                                     Container(
                                       padding: const EdgeInsets.all(8),
                                       decoration: BoxDecoration(
-                                        color: AppColors.accent.withValues(alpha: 0.1),
+                                        color: AppColors.accent.withValues(
+                                          alpha: 0.1,
+                                        ),
                                         shape: BoxShape.circle,
                                       ),
-                                      child: const Icon(Icons.add_rounded, color: AppColors.accent, size: 20),
+                                      child: const Icon(
+                                        Icons.add_rounded,
+                                        color: AppColors.accent,
+                                        size: 20,
+                                      ),
                                     ),
                                   ],
                                 ),

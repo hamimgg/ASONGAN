@@ -44,7 +44,8 @@ class AsonganTextField extends StatelessWidget {
         fontSize: 14,
         fontFamily: 'Plus Jakarta Sans',
       ),
-      validator: validator ??
+      validator:
+          validator ??
           (value) {
             if (value == null || value.isEmpty) {
               return "$hint tidak boleh kosong";
@@ -58,11 +59,7 @@ class AsonganTextField extends StatelessWidget {
           fontSize: 14,
           fontFamily: 'Plus Jakarta Sans',
         ),
-        prefixIcon: Icon(
-          prefixIcon,
-          color: iconColor,
-          size: 20,
-        ),
+        prefixIcon: Icon(prefixIcon, color: iconColor, size: 20),
         suffixIcon: suffixWidget != null
             ? Padding(
                 padding: const EdgeInsets.only(right: 12),
@@ -72,8 +69,10 @@ class AsonganTextField extends StatelessWidget {
         suffixIconConstraints: const BoxConstraints(),
         filled: true,
         fillColor: fillColor,
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 16,
+          vertical: 14,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide(color: borderColor),
@@ -84,8 +83,7 @@ class AsonganTextField extends StatelessWidget {
         ),
         focusedBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: AppColors.accent, width: 1.5),
+          borderSide: const BorderSide(color: AppColors.accent, width: 1.5),
         ),
         errorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
@@ -93,8 +91,7 @@ class AsonganTextField extends StatelessWidget {
         ),
         focusedErrorBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(12),
-          borderSide:
-              const BorderSide(color: Colors.redAccent, width: 1.5),
+          borderSide: const BorderSide(color: Colors.redAccent, width: 1.5),
         ),
       ),
     );

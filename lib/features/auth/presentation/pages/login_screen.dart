@@ -120,19 +120,19 @@ class _LoginPageState extends State<LoginPage>
                             mainAxisSize: MainAxisSize.min,
                             children: [
                               // Close button
-                              Align(
-                                alignment: Alignment.topLeft,
-                                child: GestureDetector(
-                                  onTap: () => Navigator.maybePop(context),
-                                  child: Icon(
-                                    Icons.close_rounded,
-                                    color: isDark
-                                        ? Colors.white54
-                                        : Colors.black54,
-                                    size: 22,
-                                  ),
-                                ),
-                              ),
+                              // Align(
+                              //   alignment: Alignment.topLeft,
+                              //   child: GestureDetector(
+                              //     onTap: () => Navigator.maybePop(context),
+                              //     child: Icon(
+                              //       Icons.close_rounded,
+                              //       color: isDark
+                              //           ? Colors.white54
+                              //           : Colors.black54,
+                              //       size: 22,
+                              //     ),
+                              //   ),
+                              // ),
                               const SizedBox(height: 12),
 
                               // SVG Logo

@@ -1,10 +1,10 @@
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 
@@ -38,7 +38,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _switchRole() async {
     final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
-    
+
     // Jika user pindah ke mode pedagang dan belum memiliki role pedagang di database, perbarui role-nya
     if (newMode == 'pedagang' && _user != null) {
       if (_user!.role == 'pembeli') {
@@ -86,17 +86,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _showEditProfileDialog() async {
+    final Color scaffoldBg = AppColors.scaffoldBg(isDarkModeNotifier.value);
     if (_user == null) return;
-    
-    final TextEditingController nameController = TextEditingController(text: _user!.nama);
-    final TextEditingController emailController = TextEditingController(text: _user!.email);
-    final TextEditingController phoneController = TextEditingController(text: _user!.telepon);
+
+    final TextEditingController nameController = TextEditingController(
+      text: _user!.nama,
+    );
+    final TextEditingController emailController = TextEditingController(
+      text: _user!.email,
+    );
+    final TextEditingController phoneController = TextEditingController(
+      text: _user!.telepon,
+    );
 
     await showDialog(
       context: context,
       builder: (context) {
         return AlertDialog(
-          title: const Text('Edit Profil', style: TextStyle(fontFamily: 'Plus Jakarta Sans')),
+          backgroundColor: scaffoldBg,
+          title: const Text(
+            'Edit Profil',
+            style: TextStyle(fontFamily: 'Plus Jakarta Sans'),
+          ),
           content: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
@@ -104,14 +115,17 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Nama Lengkap'),
+                  // style: const TextStyle(color: Colors.white),
                 ),
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(labelText: 'Email'),
+                  // style: const TextStyle(color: Colors.white),
                 ),
                 TextField(
                   controller: phoneController,
                   decoration: const InputDecoration(labelText: 'Nomor Telepon'),
+                  // style: const TextStyle(color: Colors.white),
                 ),
               ],
             ),
@@ -122,7 +136,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
               child: const Text('Batal', style: TextStyle(color: Colors.red)),
             ),
             ElevatedButton(
-              style: ElevatedButton.styleFrom(backgroundColor: AppColors.accent),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: const Color(0xFFf5a623),
+              ),
               onPressed: () async {
                 final updatedUser = UserModelSql(
                   id: _user!.id,
@@ -153,7 +169,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
                   }
                 }
               },
-              child: const Text('Simpan', style: TextStyle(color: Colors.black)),
+              child: const Text(
+                'Simpan',
+                style: TextStyle(color: Colors.black),
+              ),
             ),
           ],
         );
