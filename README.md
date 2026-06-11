@@ -146,7 +146,11 @@ Output: `build/app/outputs/flutter-apk/`
 
 | Name | Role |
 |---|---|
+<<<<<<< HEAD
 | [Your Name] | Developer |
+=======
+| [Hamim Abdillah] | Developer |
+>>>>>>> b98c09d66df3d2b2ef3f02288d1a3c5e772fb654
 
 ---
 
@@ -162,4 +166,4 @@ This app was built with a genuine passion for supporting Indonesia's street vend
 
 ---
 
-<p align="center">Made with ❤️ for Indonesia's street vendors</p>
+<p>Made with ❤️ for Indonesia's street vendors</p>
