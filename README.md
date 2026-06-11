@@ -147,7 +147,6 @@ Output: `build/app/outputs/flutter-apk/`
 | Name | Role |
 |---|---|
 <<<<<<< HEAD
-=======
 | [Hamim Abdillah] | Developer |
 >>>>>>> b98c09d66df3d2b2ef3f02288d1a3c5e772fb654
 
