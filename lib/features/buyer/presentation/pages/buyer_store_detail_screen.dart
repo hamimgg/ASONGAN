@@ -9,6 +9,7 @@ import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
 
 class BuyerStoreDetailScreen extends StatefulWidget {
   final UserModelSql? dbSeller;
@@ -267,6 +268,48 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                           fontSize: 13,
                           height: 1.5,
                           fontFamily: 'Plus Jakarta Sans',
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () async {
+                            String telepon = '';
+                            if (isReal && widget.dbSeller?.telepon != null) {
+                              telepon = widget.dbSeller!.telepon!;
+                            } else {
+                              telepon = '81234567890';
+                            }
+                            // Clean up phone number (remove leading 0 if present)
+                            if (telepon.startsWith('0')) {
+                              telepon = telepon.substring(1);
+                            } else if (telepon.startsWith('62')) {
+                              telepon = telepon.substring(2);
+                            }
+                            
+                            final uri = Uri.parse("https://wa.me/62${telepon}?text=Halo, saya tertarik dengan dagangan Anda di Asongan!");
+                            if (await canLaunchUrl(uri)) {
+                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                            }
+                          },
+                          icon: const Icon(Icons.chat_rounded),
+                          label: const Text(
+                            "Hubungi via WhatsApp",
+                            style: TextStyle(
+                              fontFamily: 'Plus Jakarta Sans',
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF25D366),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(12),
+                            ),
+                            elevation: 0,
+                          ),
                         ),
                       ),
                       const SizedBox(height: 32),

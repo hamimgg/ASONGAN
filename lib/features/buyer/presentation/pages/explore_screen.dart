@@ -288,7 +288,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
               ),
               // Map markers
               ..._pedagangList.map((p) {
-                final rand = math.Random(p.id ?? 0);
+                final seed = (p.lokasi != null && p.lokasi!.isNotEmpty)
+                    ? p.lokasi.hashCode
+                    : (p.id ?? 0);
+                final rand = math.Random(seed);
                 final relX = 0.2 + (rand.nextDouble() * 0.6); // 0.2 to 0.8
                 final relY = 0.3 + (rand.nextDouble() * 0.4); // 0.3 to 0.7
                 return _buildMapMarker(
