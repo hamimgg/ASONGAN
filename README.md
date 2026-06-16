@@ -81,7 +81,7 @@ lib/
 
 1. Clone the repository
    ```bash
-   git clone https://github.com/username/asongan.git
+   git clone https://github.com/hamimgg/asongan.git
    cd asongan
    ```
 
