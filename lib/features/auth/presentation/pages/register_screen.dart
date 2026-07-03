@@ -1,6 +1,6 @@
 import 'package:asongan_app/core/animations/animation_background.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 
@@ -261,7 +261,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                   ),
                                   onPressed: () async {
                                     if (_formKey.currentState!.validate()) {
-                                      final newUser = UserModelSql(
+                                      final newUser = UserModelFirebase(
                                         nama: namaController.text,
                                         email: emailController.text,
                                         telepon: teleponController.text,
@@ -275,7 +275,7 @@ class _RegisterPageState extends State<RegisterPage> {
                                       final scaffoldMessenger = ScaffoldMessenger.of(context);
                                       final navigator = Navigator.of(context);
 
-                                      bool success = await DBHelper().registerUser(newUser);
+                                      bool success = await FirebaseAuthService().registerUser(newUser);
 
                                       if (success) {
                                         scaffoldMessenger.showSnackBar(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "275362012949",
+    "project_id": "sun-asongan",
+    "storage_bucket": "sun-asongan.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:275362012949:android:196b9be9ca2c247b4b931c",
+        "android_client_info": {
+          "package_name": "com.sun.asongan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCMmjAFjFeWKlwRrJZFl1KKQessG2Pe3_w"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

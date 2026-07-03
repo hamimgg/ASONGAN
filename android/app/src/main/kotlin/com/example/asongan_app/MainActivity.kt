@@ -1,4 +1,4 @@
-package com.example.asongan_app
+package com.sun.asongan
 
 import io.flutter.embedding.android.FlutterActivity
 
