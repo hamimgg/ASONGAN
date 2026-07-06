@@ -70,7 +70,7 @@ class FirebaseAuthService {
       return null;
     } catch (e) {
       log('Error logging in: ${e.toString()}');
-      return null;
+      rethrow;
     }
   }
 

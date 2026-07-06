@@ -7,6 +7,7 @@ import 'firebase_options.dart';
 final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier<bool>(false);
 
 void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const MyApp());
 }

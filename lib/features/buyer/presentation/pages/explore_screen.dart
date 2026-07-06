@@ -1,4 +1,8 @@
+import 'dart:io';
 import 'dart:math' as math;
+import 'package:google_maps_flutter/google_maps_flutter.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
 
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
@@ -22,10 +26,29 @@ class _ExploreScreenState extends State<ExploreScreen> {
   List<UserModelSql> _pedagangList = [];
   bool _isLoading = true;
 
+  GoogleMapController? _mapController;
+  LatLng _centerLocation = const LatLng(-6.2103253010780115, 106.81296123124808);
+  LatLng? _currentLocation;
+  String _currentAddress = "Menghubungi GPS...";
+  final Set<Marker> _markers = {};
+
   @override
   void initState() {
     super.initState();
     _loadData();
+    isDarkModeNotifier.addListener(_onThemeChanged);
+  }
+
+  @override
+  void dispose() {
+    isDarkModeNotifier.removeListener(_onThemeChanged);
+    super.dispose();
+  }
+
+  void _onThemeChanged() {
+    if (_mapController != null) {
+      _setMapStyle(_mapController!, isDarkModeNotifier.value);
+    }
   }
 
   Future<void> _loadData() async {
@@ -35,8 +58,221 @@ class _ExploreScreenState extends State<ExploreScreen> {
         _pedagangList = list;
         _isLoading = false;
       });
+      _checkLocationPermission();
+      _updateMarkers(isDarkModeNotifier.value);
     }
   }
+
+  LatLng _getSellerLocation(UserModelSql seller) {
+    final seed = (seller.lokasi != null && seller.lokasi!.isNotEmpty)
+        ? seller.lokasi.hashCode
+        : (seller.id ?? 0);
+    final rand = math.Random(seed);
+    // Generate offset between -0.015 and +0.015 degrees (approx 1.5 km)
+    final latOffset = -0.015 + (rand.nextDouble() * 0.03);
+    final lngOffset = -0.015 + (rand.nextDouble() * 0.03);
+    return LatLng(
+      -6.2103253010780115 + latOffset,
+      106.81296123124808 + lngOffset,
+    );
+  }
+
+  void _updateMarkers(bool isDark) {
+    final newMarkers = <Marker>{};
+
+    if (_currentLocation != null) {
+      newMarkers.add(
+        Marker(
+          markerId: const MarkerId("current_location"),
+          position: _currentLocation!,
+          infoWindow: InfoWindow(
+            title: "Lokasi Anda",
+            snippet: _currentAddress,
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(BitmapDescriptor.hueBlue),
+        ),
+      );
+    }
+
+    for (var p in _pedagangList) {
+      final isActive = p.statusJualan == true;
+      final type = p.jenisProduk ?? '';
+
+      if (_selectedFilter == 1 && !isActive) continue; // Terdekat / Aktif
+      if (_selectedFilter == 2 &&
+          !type.toLowerCase().contains('makanan') &&
+          !type.toLowerCase().contains('berat')) continue;
+      if (_selectedFilter == 3 &&
+          !type.toLowerCase().contains('minuman')) continue;
+
+      final sellerLoc = _getSellerLocation(p);
+
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId("seller_${p.id ?? p.namaToko ?? p.nama}"),
+          position: sellerLoc,
+          infoWindow: InfoWindow(
+            title: p.namaToko ?? p.nama ?? 'Pedagang',
+            snippet: "${p.jenisProduk ?? ''} • ${p.lokasi ?? ''}",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
+                ),
+              );
+            },
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            isActive ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed,
+          ),
+        ),
+      );
+    }
+
+    setState(() {
+      _markers.clear();
+      _markers.addAll(newMarkers);
+    });
+  }
+
+  Future<void> _checkLocationPermission() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      setState(() {
+        _currentAddress = "Layanan lokasi dinonaktifkan.";
+      });
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        setState(() {
+          _currentAddress = "Izin lokasi ditolak.";
+        });
+        return;
+      }
+    }
+    
+    if (permission == LocationPermission.deniedForever) {
+      setState(() {
+        _currentAddress = "Izin lokasi ditolak permanen.";
+      });
+      return;
+    } 
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      final latLng = LatLng(position.latitude, position.longitude);
+      
+      setState(() {
+        _currentLocation = latLng;
+        _centerLocation = latLng;
+      });
+
+      if (_mapController != null) {
+        _mapController!.animateCamera(
+          CameraUpdate.newCameraPosition(
+            CameraPosition(target: latLng, zoom: 14.5),
+          ),
+        );
+      }
+
+      await _getAddressFromLatLng(position.latitude, position.longitude);
+      _updateMarkers(isDarkModeNotifier.value);
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+    }
+  }
+
+  Future<void> _getAddressFromLatLng(double latitude, double longitude) async {
+    try {
+      List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(latitude, longitude);
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        setState(() {
+          _currentAddress = "${place.street}, ${place.subLocality}, ${place.locality}";
+        });
+      }
+    } catch (e) {
+      debugPrint("Error geocoding: $e");
+      setState(() {
+        _currentAddress = "Lokasi tidak diketahui";
+      });
+    }
+  }
+
+  void _setMapStyle(GoogleMapController controller, bool isDark) {
+    if (isDark) {
+      controller.setMapStyle(_darkMapStyle);
+    } else {
+      controller.setMapStyle(null);
+    }
+  }
+
+  static const String _darkMapStyle = '''
+  [
+    {
+      "elementType": "geometry",
+      "stylers": [
+        {"color": "#212121"}
+      ]
+    },
+    {
+      "elementType": "labels.icon",
+      "stylers": [
+        {"visibility": "off"}
+      ]
+    },
+    {
+      "elementType": "labels.text.fill",
+      "stylers": [
+        {"color": "#757575"}
+      ]
+    },
+    {
+      "elementType": "labels.text.stroke",
+      "stylers": [
+        {"color": "#212121"}
+      ]
+    },
+    {
+      "featureType": "administrative",
+      "elementType": "geometry",
+      "stylers": [
+        {"color": "#757575"}
+      ]
+    },
+    {
+      "featureType": "poi",
+      "elementType": "geometry",
+      "stylers": [
+        {"color": "#181818"}
+      ]
+    },
+    {
+      "featureType": "road",
+      "elementType": "geometry.fill",
+      "stylers": [
+        {"color": "#2c2c2c"}
+      ]
+    },
+    {
+      "featureType": "water",
+      "elementType": "geometry",
+      "stylers": [
+        {"color": "#000000"}
+      ]
+    }
+  ]
+  ''';
 
   @override
   Widget build(BuildContext context) {
@@ -224,7 +460,12 @@ class _ExploreScreenState extends State<ExploreScreen> {
             return Padding(
               padding: const EdgeInsets.only(right: 8),
               child: GestureDetector(
-                onTap: () => setState(() => _selectedFilter = index),
+                onTap: () {
+                  setState(() {
+                    _selectedFilter = index;
+                  });
+                  _updateMarkers(isDarkModeNotifier.value);
+                },
                 child: Container(
                   padding: const EdgeInsets.symmetric(
                     horizontal: 16,
@@ -270,41 +511,24 @@ class _ExploreScreenState extends State<ExploreScreen> {
           color: isDark ? const Color(0xFF1E1E1E) : const Color(0xFFE8EDF2),
           child: Stack(
             children: [
-              // Map background image
+              // Real Google Map
               Positioned.fill(
-                child: Image.asset(
-                  "assets/images/map_jakarta_light.png",
-                  fit: BoxFit.cover,
-                  color: isDark ? Colors.black.withValues(alpha: 0.7) : null,
-                  colorBlendMode: isDark ? BlendMode.darken : null,
-                  errorBuilder: (c, e, s) {
-                    // Fallback grid if image missing
-                    return CustomPaint(
-                      size: Size(constraints.maxWidth, constraints.maxHeight),
-                      painter: _MapGridPainter(isDark: isDark),
-                    );
+                child: GoogleMap(
+                  initialCameraPosition: CameraPosition(
+                    target: _centerLocation,
+                    zoom: 14.5,
+                  ),
+                  markers: _markers,
+                  onMapCreated: (GoogleMapController controller) {
+                    _mapController = controller;
+                    _setMapStyle(controller, isDark);
                   },
+                  myLocationEnabled: false,
+                  myLocationButtonEnabled: false,
+                  zoomControlsEnabled: false,
+                  compassEnabled: false,
                 ),
               ),
-              // Map markers
-              ..._pedagangList.map((p) {
-                final seed = (p.lokasi != null && p.lokasi!.isNotEmpty)
-                    ? p.lokasi.hashCode
-                    : (p.id ?? 0);
-                final rand = math.Random(seed);
-                final relX = 0.2 + (rand.nextDouble() * 0.6); // 0.2 to 0.8
-                final relY = 0.3 + (rand.nextDouble() * 0.4); // 0.3 to 0.7
-                return _buildMapMarker(
-                  p.namaToko ?? p.nama ?? 'Pedagang',
-                  relX,
-                  relY,
-                  constraints,
-                  isDark,
-                  p.statusJualan ?? true,
-                  p.jenisProduk ?? '',
-                  p,
-                );
-              }),
 
               // Floating Search Bar & Filter Chips at the top
               Positioned(
@@ -337,10 +561,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ),
                     ],
                   ),
-                  child: const Icon(
-                    Icons.my_location_rounded,
-                    color: Color(0xFFF5A623),
-                    size: 20,
+                  child: Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(20),
+                      onTap: () {
+                        if (_currentLocation != null && _mapController != null) {
+                          _mapController!.animateCamera(
+                            CameraUpdate.newCameraPosition(
+                              CameraPosition(
+                                target: _currentLocation!,
+                                zoom: 14.5,
+                              ),
+                            ),
+                          );
+                        } else {
+                          _checkLocationPermission();
+                        }
+                      },
+                      child: const Icon(
+                        Icons.my_location_rounded,
+                        color: Color(0xFFF5A623),
+                        size: 20,
+                      ),
+                    ),
                   ),
                 ),
               ),
@@ -348,88 +592,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
           ),
         );
       },
-    );
-  }
-
-  Widget _buildMapMarker(
-    String name,
-    double relX,
-    double relY,
-    BoxConstraints constraints,
-    bool isDark,
-    bool isActive,
-    String type,
-    UserModelSql seller,
-  ) {
-    final Color markerColor = isActive
-        ? const Color(0xFFF5A623)
-        : (isDark ? const Color(0xFF3A3A3C) : const Color(0xFF9E9E9E));
-    final Color textColor = Colors.white;
-
-    IconData markerIcon = Icons.storefront_rounded;
-    if (type.toLowerCase().contains('minuman'))
-      markerIcon = Icons.local_drink_rounded;
-    if (type.toLowerCase().contains('makanan') ||
-        type.toLowerCase().contains('berat'))
-      markerIcon = Icons.restaurant_rounded;
-
-    return Positioned(
-      left: relX * constraints.maxWidth - 50,
-      top: relY * constraints.maxHeight - 50,
-      child: GestureDetector(
-        onTap: () {
-          Navigator.push(
-            context,
-            MaterialPageRoute(
-              builder: (context) => BuyerStoreDetailScreen(dbSeller: seller),
-            ),
-          );
-        },
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-              decoration: BoxDecoration(
-                color: markerColor,
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: markerColor.withValues(alpha: 0.3),
-                    blurRadius: 8,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(markerIcon, color: textColor, size: 14),
-                  const SizedBox(width: 4),
-                  Text(
-                    name,
-                    style: TextStyle(
-                      color: textColor,
-                      fontSize: 12,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Plus Jakarta Sans',
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            // Triangle pointer under the speech bubble
-            Transform.translate(
-              offset: const Offset(0, -4),
-              child: Icon(
-                Icons.arrow_drop_down_rounded,
-                color: markerColor,
-                size: 20,
-              ),
-            ),
-          ],
-        ),
-      ),
     );
   }
 
@@ -536,6 +698,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                 imagePath:
                                     'assets/images/tukang_bubur.png', // Placeholder
                                 isDark: isDark,
+                                fotoToko: p.fotoToko,
                               ),
                             ),
                           );
@@ -553,6 +716,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
     required String distance,
     required String imagePath,
     required bool isDark,
+    String? fotoToko,
   }) {
     final Color cardBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
     final Color cardBorderColor = isDark
@@ -592,17 +756,30 @@ class _ExploreScreenState extends State<ExploreScreen> {
                       ? const Color(0xFF3A3A3C)
                       : const Color(0xFFF1F5F9),
                   child: ClipOval(
-                    child: Image.asset(
-                      imagePath,
-                      width: 40,
-                      height: 40,
-                      fit: BoxFit.cover,
-                      errorBuilder: (c, e, s) => const Icon(
-                        Icons.storefront_rounded,
-                        color: Color(0xFFF5A623),
-                        size: 20,
-                      ),
-                    ),
+                    child: fotoToko != null && fotoToko.isNotEmpty
+                        ? Image.file(
+                            File(fotoToko),
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => Image.asset(
+                              imagePath,
+                              width: 40,
+                              height: 40,
+                              fit: BoxFit.cover,
+                            ),
+                          )
+                        : Image.asset(
+                            imagePath,
+                            width: 40,
+                            height: 40,
+                            fit: BoxFit.cover,
+                            errorBuilder: (c, e, s) => const Icon(
+                              Icons.storefront_rounded,
+                              color: Color(0xFFF5A623),
+                              size: 20,
+                            ),
+                          ),
                   ),
                 ),
                 // Green online indicator dot
@@ -671,27 +848,3 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 }
 
-// Fallback grid painter for map
-class _MapGridPainter extends CustomPainter {
-  final bool isDark;
-  _MapGridPainter({required this.isDark});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final linePaint = Paint()
-      ..color = isDark ? const Color(0xFF2E2E30) : const Color(0xFFD0D8E0)
-      ..strokeWidth = 0.8;
-
-    const step = 40.0;
-    for (double x = 0; x < size.width; x += step) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), linePaint);
-    }
-    for (double y = 0; y < size.height; y += step) {
-      canvas.drawLine(Offset(0, y), Offset(size.width, y), linePaint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _MapGridPainter oldDelegate) =>
-      oldDelegate.isDark != isDark;
-}

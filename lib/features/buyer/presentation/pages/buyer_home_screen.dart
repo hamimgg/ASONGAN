@@ -252,6 +252,8 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           String distance;
           double rating;
 
+          String? fotoToko;
+
           if (index < _dbSellers.length) {
             final seller = _dbSellers[index];
             name = seller.namaToko ?? seller.nama ?? 'Pedagang';
@@ -260,6 +262,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 ? seller.lokasi!
                 : "Tidak ada lokasi";
             rating = 4.8; // Dummy value
+            fotoToko = seller.fotoToko;
           } else {
             final dummyIndex = index - _dbSellers.length;
             final seller = dummyNearbySellers[dummyIndex];
@@ -309,10 +312,26 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                             color: AppColors.inputFill(isDark),
                           ),
                           width: double.infinity,
-                          child: Image.asset(
-                            "assets/images/tukang_siomay.png",
-                            fit: BoxFit.cover,
-                          ),
+                          child: fotoToko != null && fotoToko.isNotEmpty
+                              ? ClipRRect(
+                                  borderRadius: const BorderRadius.vertical(
+                                    top: Radius.circular(15),
+                                  ),
+                                  child: Image.file(
+                                    File(fotoToko),
+                                    fit: BoxFit.cover,
+                                    errorBuilder: (context, error, stackTrace) {
+                                      return Image.asset(
+                                        "assets/images/tukang_siomay.png",
+                                        fit: BoxFit.cover,
+                                      );
+                                    },
+                                  ),
+                                )
+                              : Image.asset(
+                                  "assets/images/tukang_siomay.png",
+                                  fit: BoxFit.cover,
+                                ),
                         ),
                         if (isSelling)
                           Positioned(

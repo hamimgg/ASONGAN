@@ -2,7 +2,6 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
 import 'package:asongan_app/main.dart';
@@ -71,16 +70,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
       Navigator.pushReplacement(
         context,
         MaterialPageRoute(builder: (context) => const MainWrapper()),
-      );
-    }
-  }
-
-  Future<void> _handleLogout() async {
-    await AuthService.clearSession();
-    if (mounted) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const LoginPage()),
       );
     }
   }
@@ -313,18 +302,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                     );
                   },
                 ),
-                const SizedBox(height: 12),
-                _buildActionItem(
-                  icon: Icons.logout_rounded,
-                  title: "Keluar (Logout)",
-                  subtitle: "Akhiri sesi Anda",
-                  iconColor: AppColors.statusClosed,
-                  textColor: AppColors.statusClosed,
-                  subtitleColor: subtitleColor,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  onTap: _handleLogout,
-                ),
+
               ],
             ),
           ),

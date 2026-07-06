@@ -24,7 +24,7 @@ class DBHelper {
 
     return await openDatabase(
       path,
-      version: 7,
+      version: 8,
       onCreate: (db, version) async {
         await db.execute('''
           CREATE TABLE users(
@@ -39,7 +39,8 @@ class DBHelper {
             nama_makanan TEXT,
             status_jualan INTEGER DEFAULT 1,
             jam_operasional TEXT DEFAULT '',
-            lokasi TEXT DEFAULT ''
+            lokasi TEXT DEFAULT '',
+            foto_toko TEXT DEFAULT ''
           )
         ''');
         await db.execute('''
@@ -59,39 +60,13 @@ class DBHelper {
         ''');
       },
       onUpgrade: (db, oldVersion, newVersion) async {
-        await db.execute('DROP TABLE IF EXISTS produk');
-        await db.execute('DROP TABLE IF EXISTS users');
-        await db.execute('''
-          CREATE TABLE users(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            email TEXT UNIQUE,
-            password TEXT,
-            nama TEXT,
-            telepon TEXT,
-            role TEXT,
-            nama_toko TEXT,
-            jenis_produk TEXT,
-            nama_makanan TEXT,
-            status_jualan INTEGER DEFAULT 1,
-            jam_operasional TEXT DEFAULT '',
-            lokasi TEXT DEFAULT ''
-          )
-        ''');
-        await db.execute('''
-          CREATE TABLE produk(
-            id INTEGER PRIMARY KEY AUTOINCREMENT,
-            id_pedagang INTEGER,
-            nama_produk TEXT,
-            harga REAL,
-            deskripsi TEXT,
-            image_path TEXT,
-            stok INTEGER DEFAULT 0,
-            is_tersedia INTEGER DEFAULT 1,
-            kategori TEXT DEFAULT 'Umum',
-            variasi TEXT DEFAULT '',
-            FOREIGN KEY (id_pedagang) REFERENCES users (id) ON DELETE CASCADE
-          )
-        ''');
+        if (oldVersion < 8) {
+          try {
+            await db.execute("ALTER TABLE users ADD COLUMN foto_toko TEXT DEFAULT ''");
+          } catch (e) {
+            log("onUpgrade error: $e");
+          }
+        }
       },
     );
   }
@@ -119,6 +94,20 @@ class DBHelper {
     );
     log(results.toString());
 
+    if (results.isNotEmpty) {
+      return UserModelSql.fromMap(results.first);
+    }
+    return null;
+  }
+
+  // Fungsi Get User By Email
+  Future<UserModelSql?> getUserByEmail(String email) async {
+    final db = await database;
+    final List<Map<String, dynamic>> results = await db.query(
+      'users',
+      where: 'email = ?',
+      whereArgs: [email],
+    );
     if (results.isNotEmpty) {
       return UserModelSql.fromMap(results.first);
     }

@@ -7,6 +7,9 @@ import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrappe
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 
 class LoginPage extends StatefulWidget {
   const LoginPage({super.key});
@@ -560,22 +563,63 @@ class _LoginPageState extends State<LoginPage>
     if (!_formKey.currentState!.validate()) return;
     setState(() => _isLoading = true);
     try {
-      final user = UserModelSql(
+      // 1. Sign in dengan Firebase Authentication & Firestore
+      final fbUser = UserModelFirebase(
         email: emailController.text,
         password: passwordController.text,
       );
-      final result = await DBHelper().loginUser(user);
+      final fbResult = await FirebaseAuthService().loginUser(fbUser);
+      
       if (!mounted) return;
 
-      if (result != null) {
+      if (fbResult != null) {
+        // 2. Cek apakah user ada di local SQLite database
+        UserModelSql? result = await DBHelper().getUserByEmail(fbResult.email);
+        
+        if (result == null) {
+          // Jika tidak ada di SQLite local, register kan ke SQLite local
+          final newUserSql = fbResult.toSql();
+          await DBHelper().registerUser(newUserSql);
+          // Ambil kembali data user dari SQLite local agar memiliki ID integer auto-increment
+          result = await DBHelper().getUserByEmail(fbResult.email);
+        } else {
+          // Jika ada di SQLite local, update data profilnya agar sinkron dengan Firestore
+          final updatedUserSql = UserModelSql(
+            id: result.id,
+            email: fbResult.email,
+            password: fbResult.password,
+            nama: fbResult.nama,
+            telepon: fbResult.telepon,
+            role: fbResult.role,
+            namaToko: fbResult.namaToko,
+            jenisProduk: fbResult.jenisProduk,
+            namaMakanan: fbResult.namaMakanan,
+            statusJualan: fbResult.statusJualan,
+            jamOperasional: fbResult.jamOperasional,
+            lokasi: fbResult.lokasi,
+          );
+          await DBHelper().updateUser(updatedUserSql);
+          result = updatedUserSql;
+        }
+
+        if (result == null) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text("Gagal mensinkronisasikan akun lokal.")),
+          );
+          return;
+        }
+
+        // 3. Validasi Role
         if (result.role != (pembeli ? 'pembeli' : 'pedagang') &&
+            result.role != 'pedagang_dan_pembeli' &&
             result.role != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Role tidak sesuai dengan akun ini.")),
           );
           return;
         }
-        // Save session
+        
+        // 4. Simpan Session
         await AuthService.saveUserSession(result);
         if (!mounted) return;
 
@@ -588,6 +632,30 @@ class _LoginPageState extends State<LoginPage>
           const SnackBar(content: Text("Email atau Kata Sandi salah")),
         );
       }
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      String errorMsg = "Email atau Kata Sandi salah";
+      if (e.code == 'user-not-found') {
+        errorMsg = "Email tidak terdaftar";
+      } else if (e.code == 'wrong-password') {
+        errorMsg = "Kata sandi salah";
+      } else if (e.code == 'invalid-email') {
+        errorMsg = "Format email tidak valid";
+      } else if (e.code == 'user-disabled') {
+        errorMsg = "Akun telah dinonaktifkan";
+      } else if (e.code == 'invalid-credential') {
+        errorMsg = "Email atau kata sandi tidak valid";
+      } else if (e.message != null) {
+        errorMsg = e.message!;
+      }
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(errorMsg)),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text("Terjadi kesalahan: ${e.toString()}")),
+      );
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }

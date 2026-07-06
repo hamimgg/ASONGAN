@@ -3,6 +3,7 @@ import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
+import 'package:asongan_app/features/auth/data/db_helper.dart';
 
 class RegisterPage extends StatefulWidget {
   final bool isPedagang;
@@ -278,6 +279,9 @@ class _RegisterPageState extends State<RegisterPage> {
                                       bool success = await FirebaseAuthService().registerUser(newUser);
 
                                       if (success) {
+                                        // Sinkronisasi data ke SQLite lokal
+                                        await DBHelper().registerUser(newUser.toSql());
+                                        
                                         scaffoldMessenger.showSnackBar(
                                           const SnackBar(
                                             content: Text("Pendaftaran berhasil! Silakan masuk."),

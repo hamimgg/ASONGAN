@@ -87,6 +87,7 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
         final String imagePath = isReal
             ? 'assets/images/tukang_bubur.png'
             : widget.dummySeller!.imagePath;
+        final String? fotoToko = isReal ? widget.dbSeller!.fotoToko : null;
 
         // Fallback info
         const String since = "2024";
@@ -120,7 +121,18 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Image.asset(imagePath, fit: BoxFit.cover),
+                      fotoToko != null && fotoToko.isNotEmpty
+                          ? Image.file(
+                              File(fotoToko),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Image.asset(
+                                  'assets/images/tukang_bubur.png',
+                                  fit: BoxFit.cover,
+                                );
+                              },
+                            )
+                          : Image.asset(imagePath, fit: BoxFit.cover),
                       Container(
                         decoration: BoxDecoration(
                           gradient: LinearGradient(

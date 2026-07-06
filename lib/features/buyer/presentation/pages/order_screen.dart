@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
@@ -184,57 +185,99 @@ class _OrderScreenState extends State<OrderScreen> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Expanded(
-                        child: Text(
-                          pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan',
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Plus Jakarta Sans',
-                          ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                        ),
-                      ),
+                      // Store Photo
                       Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 10,
-                          vertical: 4,
-                        ),
+                        width: 60,
+                        height: 60,
                         decoration: BoxDecoration(
-                          color: isBerjualan
-                              ? const Color(0xFF4CD964).withValues(alpha: 0.15)
-                              : const Color(0xFFFF3B30).withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(20),
+                          color: isDark ? const Color(0xFF1C1C1E) : const Color(0xFFF1F5F9),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: cardBorderColor),
                         ),
-                        child: Text(
-                          isBerjualan ? "Berjualan" : "Tutup",
-                          style: TextStyle(
-                            color: isBerjualan
-                                ? const Color(0xFF4CD964)
-                                : const Color(0xFFFF3B30),
-                            fontWeight: FontWeight.bold,
-                            fontSize: 11,
-                            fontFamily: 'Plus Jakarta Sans',
-                          ),
+                        child: pedagang.fotoToko != null && pedagang.fotoToko!.isNotEmpty
+                            ? ClipRRect(
+                                borderRadius: BorderRadius.circular(11),
+                                child: Image.file(
+                                  File(pedagang.fotoToko!),
+                                  fit: BoxFit.cover,
+                                  errorBuilder: (c, e, s) => const Icon(
+                                    Icons.storefront_rounded,
+                                    color: AppColors.accent,
+                                    size: 30,
+                                  ),
+                                ),
+                              )
+                            : const Icon(
+                                Icons.storefront_rounded,
+                                color: AppColors.accent,
+                                size: 30,
+                              ),
+                      ),
+                      const SizedBox(width: 16),
+                      // Store Details
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan',
+                                    style: TextStyle(
+                                      color: textColor,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                      fontFamily: 'Plus Jakarta Sans',
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                                ),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 10,
+                                    vertical: 4,
+                                  ),
+                                  decoration: BoxDecoration(
+                                    color: isBerjualan
+                                        ? const Color(0xFF4CD964).withValues(alpha: 0.15)
+                                        : const Color(0xFFFF3B30).withValues(alpha: 0.15),
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                  child: Text(
+                                    isBerjualan ? "Berjualan" : "Tutup",
+                                    style: TextStyle(
+                                      color: isBerjualan
+                                          ? const Color(0xFF4CD964)
+                                          : const Color(0xFFFF3B30),
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 11,
+                                      fontFamily: 'Plus Jakarta Sans',
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            Text(
+                              pedagang.namaMakanan ??
+                                  pedagang.jenisProduk ??
+                                  'Makanan & Minuman',
+                              style: const TextStyle(
+                                color: Color(0xFFF5A623),
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    pedagang.namaMakanan ??
-                        pedagang.jenisProduk ??
-                        'Makanan & Minuman',
-                    style: const TextStyle(
-                      color: Color(0xFFF5A623),
-                      fontSize: 14,
-                      fontWeight: FontWeight.bold,
-                      fontFamily: 'Plus Jakarta Sans',
-                    ),
                   ),
                   const SizedBox(height: 6),
                   Row(

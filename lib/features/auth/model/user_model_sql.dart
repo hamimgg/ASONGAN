@@ -14,6 +14,7 @@ class UserModelSql {
   final bool? statusJualan;
   final String? jamOperasional;
   final String? lokasi;
+  final String? fotoToko;
 
   UserModelSql({
     this.id,
@@ -28,6 +29,7 @@ class UserModelSql {
     this.statusJualan,
     this.jamOperasional,
     this.lokasi,
+    this.fotoToko,
   });
 
   Map<String, dynamic> toMap() {
@@ -44,6 +46,7 @@ class UserModelSql {
       'status_jualan': (statusJualan ?? true) ? 1 : 0,
       'jam_operasional': jamOperasional,
       'lokasi': lokasi,
+      'foto_toko': fotoToko,
     };
   }
 
@@ -61,6 +64,7 @@ class UserModelSql {
       statusJualan: map['status_jualan'] != null ? map['status_jualan'] == 1 : true,
       jamOperasional: map['jam_operasional'] != null ? map['jam_operasional'] as String : null,
       lokasi: map['lokasi'] != null ? map['lokasi'] as String : null,
+      fotoToko: map['foto_toko'] != null ? map['foto_toko'] as String : null,
     );
   }
 

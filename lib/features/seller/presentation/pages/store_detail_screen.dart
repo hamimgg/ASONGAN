@@ -1,3 +1,4 @@
+import 'dart:io';
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
@@ -5,6 +6,7 @@ import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:image_picker/image_picker.dart';
 
 class StoreDetailScreen extends StatefulWidget {
   const StoreDetailScreen({super.key});
@@ -18,6 +20,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   bool _isLoading = true;
 
   // Form states
+  File? _storeImageFile;
+  final ImagePicker _picker = ImagePicker();
+
   bool _statusJualan = true;
   final TextEditingController _jamController = TextEditingController();
   final TextEditingController _lokasiController = TextEditingController();
@@ -43,39 +48,61 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   Future<void> _loadStoreDetails() async {
     final user = await AuthService.getUserSession();
     if (user != null && user.id != null) {
-      final latestUser = await DBHelper().getUserById(user.id!);
-      if (latestUser != null) {
-        final products = await DBHelper().getProductsByPedagang(user.id!);
-
-        List<String> bestSelling = [];
-        for (int i = 0; i < products.length && i < 3; i++) {
-          bestSelling.add(products[i].namaProduk);
-        }
-
-        List<String> lowStock = [];
-        for (var p in products) {
-          if (p.stok < 5) {
-            lowStock.add("${p.namaProduk} (Sisa ${p.stok})");
-          }
-        }
-
-        setState(() {
-          _currentUser = latestUser;
-          _statusJualan = latestUser.statusJualan ?? true;
-          _jamController.text = latestUser.jamOperasional ?? '';
-          _lokasiController.text = latestUser.lokasi ?? '';
-          _namaTokoController.text =
-              latestUser.namaToko ?? latestUser.nama ?? '';
-          _bestSellingMenu = bestSelling;
-          _lowStockMenu = lowStock;
-          _isLoading = false;
-        });
-        return;
+      var dbUser = await DBHelper().getUserById(user.id!);
+      if (dbUser == null) {
+        // User exists in SharedPreferences but not in SQLite (e.g. wiped database).
+        // Let's re-insert the user into the SQLite database.
+        await DBHelper().registerUser(user);
+        dbUser = await DBHelper().getUserById(user.id!) ?? user;
       }
+
+      final UserModelSql activeUser = dbUser;
+
+      final products = await DBHelper().getProductsByPedagang(activeUser.id!);
+
+      List<String> bestSelling = [];
+      for (int i = 0; i < products.length && i < 3; i++) {
+        bestSelling.add(products[i].namaProduk);
+      }
+
+      List<String> lowStock = [];
+      for (var p in products) {
+        if (p.stok < 5) {
+          lowStock.add("${p.namaProduk} (Sisa ${p.stok})");
+        }
+      }
+
+      File? imgFile;
+      if (activeUser.fotoToko != null && activeUser.fotoToko!.isNotEmpty) {
+        imgFile = File(activeUser.fotoToko!);
+      }
+
+      setState(() {
+        _currentUser = activeUser;
+        _statusJualan = activeUser.statusJualan ?? true;
+        _jamController.text = activeUser.jamOperasional ?? '';
+        _lokasiController.text = activeUser.lokasi ?? '';
+        _namaTokoController.text =
+            activeUser.namaToko ?? activeUser.nama ?? '';
+        _bestSellingMenu = bestSelling;
+        _lowStockMenu = lowStock;
+        _storeImageFile = imgFile;
+        _isLoading = false;
+      });
+      return;
     }
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _pickStoreImage() async {
+    final pickedFile = await _picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _storeImageFile = File(pickedFile.path);
+      });
+    }
   }
 
   Future<void> _saveSettings() async {
@@ -94,9 +121,38 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       statusJualan: _statusJualan,
       jamOperasional: _jamController.text,
       lokasi: _lokasiController.text,
+      fotoToko: _storeImageFile != null ? _storeImageFile!.path : (_currentUser!.fotoToko ?? ''),
     );
 
-    final success = await DBHelper().updateUser(updatedUser);
+    // Coba update data user di database SQLite
+    bool success = await DBHelper().updateUser(updatedUser);
+
+    // Jika gagal (karena user tidak ada di database SQLite), coba daftarkan ulang user
+    if (!success) {
+      final existing = await DBHelper().getUserByEmail(updatedUser.email);
+      if (existing == null) {
+        success = await DBHelper().registerUser(updatedUser);
+      } else {
+        // Jika ada dengan ID berbeda, update dengan ID yang sesuai
+        final userWithCorrectId = UserModelSql(
+          id: existing.id,
+          email: updatedUser.email,
+          password: updatedUser.password,
+          nama: updatedUser.nama,
+          telepon: updatedUser.telepon,
+          role: updatedUser.role,
+          namaToko: updatedUser.namaToko,
+          jenisProduk: updatedUser.jenisProduk,
+          namaMakanan: updatedUser.namaMakanan,
+          statusJualan: updatedUser.statusJualan,
+          jamOperasional: updatedUser.jamOperasional,
+          lokasi: updatedUser.lokasi,
+          fotoToko: updatedUser.fotoToko,
+        );
+        success = await DBHelper().updateUser(userWithCorrectId);
+      }
+    }
+
     if (success) {
       await AuthService.saveUserSession(updatedUser);
       if (mounted) {
@@ -277,6 +333,81 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             ],
           ),
           const Divider(height: 24),
+
+          // Foto Toko Uploader UI
+          Center(
+            child: GestureDetector(
+              onTap: _pickStoreImage,
+              child: Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: inputFill,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: inputBorder),
+                ),
+                child: _storeImageFile != null
+                    ? ClipRRect(
+                        borderRadius: BorderRadius.circular(15),
+                        child: Image.file(
+                          _storeImageFile!,
+                          fit: BoxFit.cover,
+                        ),
+                      )
+                    : (_currentUser?.fotoToko != null && _currentUser!.fotoToko!.isNotEmpty)
+                        ? ClipRRect(
+                            borderRadius: BorderRadius.circular(15),
+                            child: Image.file(
+                              File(_currentUser!.fotoToko!),
+                              fit: BoxFit.cover,
+                              errorBuilder: (context, error, stackTrace) {
+                                return Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    const Icon(
+                                      Icons.storefront_rounded,
+                                      color: AppColors.accent,
+                                      size: 40,
+                                    ),
+                                    const SizedBox(height: 8),
+                                    Text(
+                                      "Ubah Foto",
+                                      style: TextStyle(
+                                        color: subtitleColor,
+                                        fontSize: 12,
+                                        fontWeight: FontWeight.w500,
+                                        fontFamily: 'Plus Jakarta Sans',
+                                      ),
+                                    ),
+                                  ],
+                                );
+                              },
+                            ),
+                          )
+                        : Column(
+                            mainAxisAlignment: MainAxisAlignment.center,
+                            children: [
+                              Icon(
+                                Icons.add_a_photo_rounded,
+                                color: isDark ? const Color(0xFF5A5A5C) : const Color(0xFF9E9E9E),
+                                size: 32,
+                              ),
+                              const SizedBox(height: 8),
+                              Text(
+                                "Foto Toko",
+                                style: TextStyle(
+                                  color: subtitleColor,
+                                  fontSize: 12,
+                                  fontWeight: FontWeight.w500,
+                                  fontFamily: 'Plus Jakarta Sans',
+                                ),
+                              ),
+                            ],
+                          ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
 
           // Nama Toko
           Text(
