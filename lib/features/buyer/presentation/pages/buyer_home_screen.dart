@@ -270,6 +270,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
             isSelling = seller.isSelling;
             distance = seller.distance;
             rating = seller.rating;
+            fotoToko = seller.imagePath;
           }
 
           return GestureDetector(
@@ -313,21 +314,31 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                           ),
                           width: double.infinity,
                           child: fotoToko != null && fotoToko.isNotEmpty
-                              ? ClipRRect(
-                                  borderRadius: const BorderRadius.vertical(
-                                    top: Radius.circular(15),
-                                  ),
-                                  child: Image.file(
-                                    File(fotoToko),
-                                    fit: BoxFit.cover,
-                                    errorBuilder: (context, error, stackTrace) {
-                                      return Image.asset(
-                                        "assets/images/tukang_siomay.png",
+                              ? (fotoToko.startsWith('assets/')
+                                  ? ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(15),
+                                      ),
+                                      child: Image.asset(
+                                        fotoToko,
                                         fit: BoxFit.cover,
-                                      );
-                                    },
-                                  ),
-                                )
+                                      ),
+                                    )
+                                  : ClipRRect(
+                                      borderRadius: const BorderRadius.vertical(
+                                        top: Radius.circular(15),
+                                      ),
+                                      child: Image.file(
+                                        File(fotoToko),
+                                        fit: BoxFit.cover,
+                                        errorBuilder: (context, error, stackTrace) {
+                                          return Image.asset(
+                                            "assets/images/tukang_siomay.png",
+                                            fit: BoxFit.cover,
+                                          );
+                                        },
+                                      ),
+                                    ))
                               : Image.asset(
                                   "assets/images/tukang_siomay.png",
                                   fit: BoxFit.cover,
@@ -497,7 +508,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
           name = product.name;
           price = product.price.toDouble();
           isTersedia = true; // Dummy products are always available
-          imagePath = "assets/images/es_cendol.png"; // Fallback dummy image
+          imagePath = product.imagePath; // Fallback dummy image
           isLocalImage = false;
         }
 

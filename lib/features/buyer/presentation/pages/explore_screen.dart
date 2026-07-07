@@ -6,6 +6,7 @@ import 'package:geocoding/geocoding.dart';
 
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -119,6 +120,48 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
+                ),
+              );
+            },
+          ),
+          icon: BitmapDescriptor.defaultMarkerWithHue(
+            isActive ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed,
+          ),
+        ),
+      );
+    }
+
+    for (var seller in dummyNearbySellers) {
+      final isActive = seller.isSelling;
+      final isMakanan = seller.name.toLowerCase().contains('siomay') || seller.name.toLowerCase().contains('sate') || seller.name.toLowerCase().contains('batagor');
+      final isMinuman = seller.name.toLowerCase().contains('cendol') || seller.name.toLowerCase().contains('es');
+      final typeStr = isMakanan ? 'Makanan' : (isMinuman ? 'Minuman' : 'Makanan & Minuman');
+
+      if (_selectedFilter == 1 && !isActive) continue; // Terdekat / Aktif
+      if (_selectedFilter == 2 && !isMakanan) continue;
+      if (_selectedFilter == 3 && !isMinuman) continue;
+
+      final seed = seller.distance.hashCode ^ seller.id.hashCode;
+      final rand = math.Random(seed);
+      final latOffset = -0.015 + (rand.nextDouble() * 0.03);
+      final lngOffset = -0.015 + (rand.nextDouble() * 0.03);
+      final sellerLoc = LatLng(
+        -6.2103253010780115 + latOffset,
+        106.81296123124808 + lngOffset,
+      );
+
+      newMarkers.add(
+        Marker(
+          markerId: MarkerId("dummy_seller_${seller.id}"),
+          position: sellerLoc,
+          infoWindow: InfoWindow(
+            title: seller.name,
+            snippet: "$typeStr • ${seller.distance}",
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => BuyerStoreDetailScreen(dummySeller: seller),
                 ),
               );
             },
@@ -603,6 +646,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
         : const Color(0xFFE2E8F0);
     final Color headerColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
+    final activeDbCount = _pedagangList.where((p) => p.statusJualan == true).length;
+    final activeDummyCount = dummyNearbySellers.where((s) => s.isSelling).length;
+    final totalActiveCount = activeDbCount + activeDummyCount;
+
     return Container(
       decoration: BoxDecoration(
         color: panelBg,
@@ -632,7 +679,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  'Pedagang Aktif (${_pedagangList.where((p) => p.statusJualan == true).length})',
+                  'Pedagang Aktif ($totalActiveCount)',
                   style: TextStyle(
                     color: headerColor,
                     fontWeight: FontWeight.bold,
@@ -663,7 +710,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           // Horizontal pedagang cards
           SizedBox(
             height: 80,
-            child: _pedagangList.isEmpty
+            child: totalActiveCount == 0
                 ? const Center(
                     child: Text(
                       'Belum ada pedagang.',
@@ -676,34 +723,57 @@ class _ExploreScreenState extends State<ExploreScreen> {
                 : ListView(
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
-                    children: _pedagangList
-                        .where((p) => p.statusJualan == true)
-                        .map((p) {
-                          return Padding(
-                            padding: const EdgeInsets.only(right: 12),
-                            child: GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
-                                  ),
-                                );
-                              },
-                              child: _buildPedagangCard(
-                                name: p.namaToko ?? p.nama ?? 'Pedagang',
-                                distance: p.lokasi != null && p.lokasi!.isNotEmpty
-                                    ? p.lokasi!
-                                    : 'Tidak ada lokasi',
-                                imagePath:
-                                    'assets/images/tukang_bubur.png', // Placeholder
-                                isDark: isDark,
-                                fotoToko: p.fotoToko,
+                    children: [
+                      ..._pedagangList
+                          .where((p) => p.statusJualan == true)
+                          .map((p) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
+                                    ),
+                                  );
+                                },
+                                child: _buildPedagangCard(
+                                  name: p.namaToko ?? p.nama ?? 'Pedagang',
+                                  distance: p.lokasi != null && p.lokasi!.isNotEmpty
+                                      ? p.lokasi!
+                                      : 'Tidak ada lokasi',
+                                  imagePath: 'assets/images/tukang_bubur.png', // Placeholder
+                                  isDark: isDark,
+                                  fotoToko: p.fotoToko,
+                                ),
                               ),
-                            ),
-                          );
-                        })
-                        .toList(),
+                            );
+                          }),
+                      ...dummyNearbySellers
+                          .where((s) => s.isSelling)
+                          .map((s) {
+                            return Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: GestureDetector(
+                                onTap: () {
+                                  Navigator.push(
+                                    context,
+                                    MaterialPageRoute(
+                                      builder: (context) => BuyerStoreDetailScreen(dummySeller: s),
+                                    ),
+                                  );
+                                },
+                                child: _buildPedagangCard(
+                                  name: s.name,
+                                  distance: s.distance,
+                                  imagePath: s.imagePath,
+                                  isDark: isDark,
+                                ),
+                              ),
+                            );
+                          }),
+                    ],
                   ),
           ),
         ],

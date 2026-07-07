@@ -40,7 +40,7 @@ final List<NearbySeller> dummyNearbySellers = [
     distance: '200m dari kamu',
     rating: 4.8,
     isSelling: true,
-    imagePath: 'assets/images/siomay.png',
+    imagePath: 'assets/images/tukang_siomay.png',
   ),
   NearbySeller(
     id: 's2',
@@ -48,7 +48,7 @@ final List<NearbySeller> dummyNearbySellers = [
     distance: '450m dari kamu',
     rating: 4.5,
     isSelling: true,
-    imagePath: 'assets/images/sate.png',
+    imagePath: 'assets/images/tukang_satepadang.png',
   ),
 ];
 
@@ -58,7 +58,7 @@ final List<RecommendedProduct> dummyRecommendedProducts = [
     sellerId: 's3',
     name: 'Es Cendol Durian',
     price: 15000,
-    imagePath: 'assets/images/cendol.png',
+    imagePath: 'assets/images/es_cendol.png',
   ),
   RecommendedProduct(
     id: 'p2',

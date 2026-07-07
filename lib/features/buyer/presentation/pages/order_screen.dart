@@ -2,6 +2,7 @@ import 'dart:io';
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -132,7 +133,9 @@ class _OrderScreenState extends State<OrderScreen> {
         ? const Color(0xFF9A9A9A)
         : const Color(0xFF7A7A7C);
 
-    if (_pedagangList.isEmpty) {
+    final totalCount = _pedagangList.length + dummyNearbySellers.length;
+
+    if (totalCount == 0) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -154,11 +157,40 @@ class _OrderScreenState extends State<OrderScreen> {
 
     return ListView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
-      itemCount: _pedagangList.length,
+      itemCount: totalCount,
       itemBuilder: (context, index) {
-        final pedagang = _pedagangList[index];
-        final isBerjualan = pedagang.statusJualan ?? true;
-        final totalStok = _totalStokMap[pedagang.id] ?? 0;
+        final bool isReal = index < _pedagangList.length;
+
+        String name;
+        bool isBerjualan;
+        String? fotoToko;
+        String jamOperasional;
+        String lokasi;
+        String jenisProduk;
+        int totalStok;
+
+        if (isReal) {
+          final pedagang = _pedagangList[index];
+          name = pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan';
+          isBerjualan = pedagang.statusJualan ?? true;
+          fotoToko = pedagang.fotoToko;
+          jamOperasional = pedagang.jamOperasional == null || pedagang.jamOperasional!.isEmpty ? 'Tidak ditentukan' : pedagang.jamOperasional!;
+          lokasi = pedagang.lokasi ?? '';
+          jenisProduk = pedagang.namaMakanan ?? pedagang.jenisProduk ?? 'Makanan & Minuman';
+          totalStok = _totalStokMap[pedagang.id] ?? 0;
+        } else {
+          final dummyIndex = index - _pedagangList.length;
+          final seller = dummyNearbySellers[dummyIndex];
+          name = seller.name;
+          isBerjualan = seller.isSelling;
+          fotoToko = seller.imagePath;
+          jamOperasional = "08:00 - 17:00";
+          lokasi = seller.distance;
+          jenisProduk = seller.name.toLowerCase().contains("siomay")
+              ? "Siomay & Batagor"
+              : (seller.name.toLowerCase().contains("sate") ? "Sate Padang" : "Makanan & Minuman");
+          totalStok = 15;
+        }
 
         return Card(
           color: cardBg,
@@ -173,8 +205,12 @@ class _OrderScreenState extends State<OrderScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) =>
-                      BuyerStoreDetailScreen(dbSeller: pedagang),
+                  builder: (context) => BuyerStoreDetailScreen(
+                    dbSeller: isReal ? _pedagangList[index] : null,
+                    dummySeller: !isReal
+                        ? dummyNearbySellers[index - _pedagangList.length]
+                        : null,
+                  ),
                 ),
               );
             },
@@ -196,19 +232,27 @@ class _OrderScreenState extends State<OrderScreen> {
                           borderRadius: BorderRadius.circular(12),
                           border: Border.all(color: cardBorderColor),
                         ),
-                        child: pedagang.fotoToko != null && pedagang.fotoToko!.isNotEmpty
-                            ? ClipRRect(
-                                borderRadius: BorderRadius.circular(11),
-                                child: Image.file(
-                                  File(pedagang.fotoToko!),
-                                  fit: BoxFit.cover,
-                                  errorBuilder: (c, e, s) => const Icon(
-                                    Icons.storefront_rounded,
-                                    color: AppColors.accent,
-                                    size: 30,
-                                  ),
-                                ),
-                              )
+                        child: fotoToko != null && fotoToko.isNotEmpty
+                            ? (fotoToko.startsWith('assets/')
+                                ? ClipRRect(
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Image.asset(
+                                      fotoToko,
+                                      fit: BoxFit.cover,
+                                    ),
+                                  )
+                                : ClipRRect(
+                                    borderRadius: BorderRadius.circular(11),
+                                    child: Image.file(
+                                      File(fotoToko),
+                                      fit: BoxFit.cover,
+                                      errorBuilder: (c, e, s) => const Icon(
+                                        Icons.storefront_rounded,
+                                        color: AppColors.accent,
+                                        size: 30,
+                                      ),
+                                    ),
+                                  ))
                             : const Icon(
                                 Icons.storefront_rounded,
                                 color: AppColors.accent,
@@ -226,7 +270,7 @@ class _OrderScreenState extends State<OrderScreen> {
                               children: [
                                 Expanded(
                                   child: Text(
-                                    pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan',
+                                    name,
                                     style: TextStyle(
                                       color: textColor,
                                       fontSize: 16,
@@ -264,9 +308,7 @@ class _OrderScreenState extends State<OrderScreen> {
                             ),
                             const SizedBox(height: 6),
                             Text(
-                              pedagang.namaMakanan ??
-                                  pedagang.jenisProduk ??
-                                  'Makanan & Minuman',
+                              jenisProduk,
                               style: const TextStyle(
                                 color: Color(0xFFF5A623),
                                 fontSize: 14,
@@ -289,7 +331,7 @@ class _OrderScreenState extends State<OrderScreen> {
                       ),
                       const SizedBox(width: 4),
                       Text(
-                        "Jam Operasional: ${pedagang.jamOperasional == null || pedagang.jamOperasional!.isEmpty ? 'Tidak ditentukan' : pedagang.jamOperasional}",
+                        "Jam Operasional: $jamOperasional",
                         style: TextStyle(
                           color: subtitleColor,
                           fontSize: 12,
@@ -298,8 +340,7 @@ class _OrderScreenState extends State<OrderScreen> {
                       ),
                     ],
                   ),
-                  if (pedagang.lokasi != null &&
-                      pedagang.lokasi!.isNotEmpty) ...[
+                  if (lokasi.isNotEmpty) ...[
                     const SizedBox(height: 4),
                     Row(
                       children: [
@@ -310,7 +351,7 @@ class _OrderScreenState extends State<OrderScreen> {
                         ),
                         const SizedBox(width: 4),
                         Text(
-                          "Lokasi: ${pedagang.lokasi}",
+                          "Lokasi: $lokasi",
                           style: TextStyle(
                             color: subtitleColor,
                             fontSize: 12,

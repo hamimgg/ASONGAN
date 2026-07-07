@@ -5,6 +5,12 @@ val keystoreProperties = Properties().apply {
  load(f.inputStream())
  }
 }
+val localProperties = Properties().apply {
+ val f = rootProject.file("local.properties")
+ if (f.exists()) {
+ load(f.inputStream())
+ }
+}
 
 plugins {
     id("com.android.application")
@@ -39,6 +45,9 @@ android {
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
+
+        val apiKey = localProperties.getProperty("GOOGLE_MAPS_API_KEY") ?: ""
+        manifestPlaceholders["GOOGLE_MAPS_API_KEY"] = apiKey
     }
 signingConfigs {
      if (keystoreProperties.isNotEmpty()) {
