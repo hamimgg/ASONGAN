@@ -1,10 +1,9 @@
 import 'dart:io';
 
+import 'package:asongan_app/core/services/firebase_product_service.dart';
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/features/seller/presentation/widgets/product_form_bottom_sheet.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -19,8 +18,7 @@ class KelolaDagangan extends StatefulWidget {
 }
 
 class _KelolaDaganganState extends State<KelolaDagangan> {
-  UserModelSql? _currentUser;
-  List<ProductModelSql> _products = [];
+  String? _pedagangId;
   bool _isLoading = true;
 
   final formatCurrency = NumberFormat.currency(
@@ -32,25 +30,21 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
   @override
   void initState() {
     super.initState();
-    _loadData();
+    _loadSession();
   }
 
-  Future<void> _loadData() async {
+  Future<void> _loadSession() async {
     final user = await AuthService.getUserSession();
-    if (user != null && user.id != null) {
-      final products = await DBHelper().getProductsByPedagang(user.id!);
+    if (mounted) {
       setState(() {
-        _currentUser = user;
-        _products = products;
+        _pedagangId = user?.id;
         _isLoading = false;
       });
-    } else {
-      setState(() => _isLoading = false);
     }
   }
 
-  void _showFormBottomSheet(bool isDark, {ProductModelSql? productToEdit}) {
-    if (_currentUser == null || _currentUser!.id == null) return;
+  void _showFormBottomSheet(bool isDark, {ProductModelFirebase? productToEdit}) {
+    if (_pedagangId == null) return;
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -60,15 +54,15 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
       ),
       builder: (context) {
         return ProductFormBottomSheet(
-          idPedagang: _currentUser!.id!,
+          pedagangId: _pedagangId!,
           productToEdit: productToEdit,
-          onSaved: () => _loadData(),
+          onSaved: () {}, // Stream Firestore memperbarui daftar secara otomatis
         );
       },
     );
   }
 
-  void _confirmDelete(ProductModelSql product, bool isDark) {
+  void _confirmDelete(ProductModelFirebase product, bool isDark) {
     showDialog(
       context: context,
       builder: (context) {
@@ -107,8 +101,8 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
               onPressed: () async {
                 Navigator.pop(context);
                 if (product.id != null) {
-                  await DBHelper().deleteProduct(product.id!);
-                  _loadData();
+                  await FirebaseProductService().deleteProduct(product.id!);
+                  // Stream Firestore akan memperbarui daftar secara otomatis
                 }
               },
               child: const Text(
@@ -138,7 +132,29 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
           body: Column(
             children: [
               _buildAppBar(context, isDark),
-              Expanded(child: _buildGroupedProductList(isDark)),
+              Expanded(
+                child: (_isLoading || _pedagangId == null)
+                    ? const Center(
+                        child: CircularProgressIndicator(color: AppColors.accent),
+                      )
+                    : StreamBuilder<List<ProductModelFirebase>>(
+                        stream: FirebaseProductService()
+                            .streamProductsByPedagang(_pedagangId!),
+                        builder: (context, snapshot) {
+                          if (snapshot.connectionState ==
+                                  ConnectionState.waiting &&
+                              !snapshot.hasData) {
+                            return const Center(
+                              child: CircularProgressIndicator(
+                                color: AppColors.accent,
+                              ),
+                            );
+                          }
+                          final products = snapshot.data ?? [];
+                          return _buildGroupedProductList(isDark, products);
+                        },
+                      ),
+              ),
             ],
           ),
           floatingActionButton: FloatingActionButton(
@@ -152,14 +168,8 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
     );
   }
 
-  Widget _buildGroupedProductList(bool isDark) {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(color: AppColors.accent),
-      );
-    }
-
-    if (_products.isEmpty) {
+  Widget _buildGroupedProductList(bool isDark, List<ProductModelFirebase> products) {
+    if (products.isEmpty) {
       return Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -192,8 +202,8 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
       );
     }
 
-    Map<String, List<ProductModelSql>> groupedProducts = {};
-    for (var p in _products) {
+    Map<String, List<ProductModelFirebase>> groupedProducts = {};
+    for (var p in products) {
       if (!groupedProducts.containsKey(p.kategori)) {
         groupedProducts[p.kategori] = [];
       }
@@ -257,7 +267,7 @@ class _KelolaDaganganState extends State<KelolaDagangan> {
     );
   }
 
-  Widget _buildProductCard(ProductModelSql p, bool isDark) {
+  Widget _buildProductCard(ProductModelFirebase p, bool isDark) {
     return Container(
       decoration: BoxDecoration(
         color: AppColors.cardBg(isDark),

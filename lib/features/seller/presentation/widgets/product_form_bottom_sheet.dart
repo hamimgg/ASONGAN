@@ -1,18 +1,18 @@
 import 'dart:io';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
+import 'package:asongan_app/core/services/firebase_product_service.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:image_picker/image_picker.dart';
 
 class ProductFormBottomSheet extends StatefulWidget {
-  final int idPedagang;
-  final ProductModelSql? productToEdit;
+  final String pedagangId;
+  final ProductModelFirebase? productToEdit;
   final VoidCallback onSaved;
 
   const ProductFormBottomSheet({
     super.key,
-    required this.idPedagang,
+    required this.pedagangId,
     this.productToEdit,
     required this.onSaved,
   });
@@ -72,9 +72,9 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
 
   Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
-      final product = ProductModelSql(
+      final product = ProductModelFirebase(
         id: widget.productToEdit?.id,
-        idPedagang: widget.idPedagang,
+        pedagangId: widget.pedagangId,
         namaProduk: _nameController.text,
         harga: double.tryParse(_priceController.text) ?? 0,
         deskripsi: _descController.text,
@@ -87,9 +87,9 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
 
       bool success;
       if (widget.productToEdit == null) {
-        success = await DBHelper().insertProduct(product);
+        success = await FirebaseProductService().addProduct(product);
       } else {
-        success = await DBHelper().updateProduct(product);
+        success = await FirebaseProductService().updateProduct(product);
       }
 
       if (success) {

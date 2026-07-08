@@ -1,5 +1,5 @@
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
@@ -14,7 +14,7 @@ class MainDrawer extends StatefulWidget {
 }
 
 class _MainDrawerState extends State<MainDrawer> {
-  UserModelSql? _currentUser;
+  UserModelFirebase? _currentUser;
   String _activeMode = 'pembeli';
 
   @override

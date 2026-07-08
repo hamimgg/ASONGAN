@@ -20,26 +20,6 @@ class BuyerHomeScreen extends StatefulWidget {
 }
 
 class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
-  List<ProductModelFirebase> _dbProducts = [];
-  List<UserModelFirebase> _dbSellers = [];
-  bool _isLoadingData = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final products = await FirebaseProductService().getAllProducts();
-    final sellers = await FirebaseAuthService().getAllPedagang();
-    setState(() {
-      _dbProducts = products;
-      _dbSellers = sellers;
-      _isLoadingData = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -222,25 +202,30 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Widget _buildNearbySellers(bool isDark) {
-    if (_isLoadingData) {
-      return const SizedBox(
-        height: 200,
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
-        ),
-      );
-    }
+    return StreamBuilder<List<UserModelFirebase>>(
+      stream: FirebaseAuthService().streamAllPedagang(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const SizedBox(
+            height: 200,
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.accent),
+            ),
+          );
+        }
 
-    final totalCount = _dbSellers.length;
+        final sellers = snapshot.data ?? [];
+        final totalCount = sellers.length;
 
-    return SizedBox(
-      height: 200,
-      child: ListView.builder(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        scrollDirection: Axis.horizontal,
-        itemCount: totalCount,
-        itemBuilder: (context, index) {
-          final seller = _dbSellers[index];
+        return SizedBox(
+          height: 200,
+          child: ListView.builder(
+            padding: const EdgeInsets.symmetric(horizontal: 16),
+            scrollDirection: Axis.horizontal,
+            itemCount: totalCount,
+            itemBuilder: (context, index) {
+              final seller = sellers[index];
           final String name = seller.namaToko ?? seller.nama ?? 'Pedagang';
           final bool isSelling = seller.statusJualan == true;
           final String distance = seller.lokasi != null && seller.lokasi!.isNotEmpty
@@ -423,9 +408,11 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 ],
               ),
             ),
-          );
-        },
-      ),
+              );
+            },
+          ),
+        );
+      },
     );
   }
 
@@ -436,30 +423,35 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       decimalDigits: 0,
     );
 
-    if (_isLoadingData) {
-      return const Padding(
-        padding: EdgeInsets.all(32),
-        child: Center(
-          child: CircularProgressIndicator(color: AppColors.accent),
-        ),
-      );
-    }
+    return StreamBuilder<List<ProductModelFirebase>>(
+      stream: FirebaseProductService().streamAllProducts(),
+      builder: (context, snapshot) {
+        if (snapshot.connectionState == ConnectionState.waiting &&
+            !snapshot.hasData) {
+          return const Padding(
+            padding: EdgeInsets.all(32),
+            child: Center(
+              child: CircularProgressIndicator(color: AppColors.accent),
+            ),
+          );
+        }
 
-    final totalCount = _dbProducts.length;
+        final products = snapshot.data ?? [];
+        final totalCount = products.length;
 
-    return GridView.builder(
-      padding: const EdgeInsets.symmetric(horizontal: 16),
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-        crossAxisCount: 2,
-        mainAxisSpacing: 16,
-        crossAxisSpacing: 16,
-        childAspectRatio: 0.75,
-      ),
-      itemCount: totalCount,
-      itemBuilder: (context, index) {
-        final product = _dbProducts[index];
+        return GridView.builder(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          shrinkWrap: true,
+          physics: const NeverScrollableScrollPhysics(),
+          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+            crossAxisCount: 2,
+            mainAxisSpacing: 16,
+            crossAxisSpacing: 16,
+            childAspectRatio: 0.75,
+          ),
+          itemCount: totalCount,
+          itemBuilder: (context, index) {
+            final product = products[index];
         final String name = product.namaProduk;
         final double price = product.harga;
         final bool isTersedia = product.isTersedia;
@@ -630,6 +622,8 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
               ],
             ),
           ),
+        );
+          },
         );
       },
     );

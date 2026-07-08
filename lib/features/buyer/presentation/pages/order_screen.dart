@@ -3,6 +3,7 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/core/services/firebase_product_service.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -16,36 +17,6 @@ class OrderScreen extends StatefulWidget {
 }
 
 class _OrderScreenState extends State<OrderScreen> {
-  List<UserModelFirebase> _pedagangList = [];
-  Map<String, int> _totalStokMap = {};
-  bool _isLoading = true;
-
-  @override
-  void initState() {
-    super.initState();
-    _loadData();
-  }
-
-  Future<void> _loadData() async {
-    final list = await FirebaseAuthService().getAllPedagang();
-    final Map<String, int> stokMap = {};
-    for (final p in list) {
-      if (p.id != null) {
-        final products = await FirebaseProductService().getProductsByPedagang(p.id!);
-        int totalStok = 0;
-        for (final prod in products) {
-          totalStok += prod.stok;
-        }
-        stokMap[p.id!] = totalStok;
-      }
-    }
-    setState(() {
-      _pedagangList = list;
-      _totalStokMap = stokMap;
-      _isLoading = false;
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<bool>(
@@ -59,13 +30,39 @@ class _OrderScreenState extends State<OrderScreen> {
             children: [
               _buildAppBar(context, isDark),
               Expanded(
-                child: _isLoading
-                    ? const Center(
+                // Realtime: daftar pedagang + total produk masing-masing toko
+                child: StreamBuilder<List<UserModelFirebase>>(
+                  stream: FirebaseAuthService().streamAllPedagang(),
+                  builder: (context, pedagangSnap) {
+                    if (pedagangSnap.connectionState ==
+                            ConnectionState.waiting &&
+                        !pedagangSnap.hasData) {
+                      return const Center(
                         child: CircularProgressIndicator(
                           color: Color(0xFFF5A623),
                         ),
-                      )
-                    : _builderTambahMenu(isDark),
+                      );
+                    }
+                    final pedagangList = pedagangSnap.data ?? [];
+
+                    return StreamBuilder<List<ProductModelFirebase>>(
+                      stream: FirebaseProductService().streamAllProducts(),
+                      builder: (context, productSnap) {
+                        final allProducts = productSnap.data ?? [];
+                        final Map<String, int> stokMap = {};
+                        for (final prod in allProducts) {
+                          stokMap[prod.pedagangId] =
+                              (stokMap[prod.pedagangId] ?? 0) + prod.stok;
+                        }
+                        return _builderTambahMenu(
+                          isDark,
+                          pedagangList,
+                          stokMap,
+                        );
+                      },
+                    );
+                  },
+                ),
               ),
             ],
           ),
@@ -116,7 +113,11 @@ class _OrderScreenState extends State<OrderScreen> {
     );
   }
 
-  Widget _builderTambahMenu(bool isDark) {
+  Widget _builderTambahMenu(
+    bool isDark,
+    List<UserModelFirebase> pedagangList,
+    Map<String, int> totalStokMap,
+  ) {
     final Color cardBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
     final Color cardBorderColor = isDark
         ? const Color(0xFF3A3A3C)
@@ -126,7 +127,7 @@ class _OrderScreenState extends State<OrderScreen> {
         ? const Color(0xFF9A9A9A)
         : const Color(0xFF7A7A7C);
 
-    final totalCount = _pedagangList.length;
+    final totalCount = pedagangList.length;
 
     if (totalCount == 0) {
       return Center(
@@ -152,14 +153,14 @@ class _OrderScreenState extends State<OrderScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: totalCount,
       itemBuilder: (context, index) {
-        final pedagang = _pedagangList[index];
+        final pedagang = pedagangList[index];
         final String name = pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan';
         final bool isBerjualan = pedagang.statusJualan ?? true;
         final String? fotoToko = pedagang.fotoToko;
         final String jamOperasional = pedagang.jamOperasional == null || pedagang.jamOperasional!.isEmpty ? 'Tidak ditentukan' : pedagang.jamOperasional!;
         final String lokasi = pedagang.lokasi ?? '';
         final String jenisProduk = pedagang.namaMakanan ?? pedagang.jenisProduk ?? 'Makanan & Minuman';
-        final int totalStok = _totalStokMap[pedagang.id] ?? 0;
+        final int totalStok = totalStokMap[pedagang.id] ?? 0;
 
         return Card(
           color: cardBg,

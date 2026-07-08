@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:io';
 import 'dart:math' as math;
 import 'package:google_maps_flutter/google_maps_flutter.dart';
@@ -25,6 +26,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   final PanelController _panelController = PanelController();
   List<UserModelFirebase> _pedagangList = [];
   bool _isLoading = true;
+  StreamSubscription<List<UserModelFirebase>>? _pedagangSubscription;
 
   GoogleMapController? _mapController;
   LatLng _centerLocation = const LatLng(-6.2103253010780115, 106.81296123124808);
@@ -41,6 +43,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
 
   @override
   void dispose() {
+    _pedagangSubscription?.cancel();
     isDarkModeNotifier.removeListener(_onThemeChanged);
     super.dispose();
   }
@@ -51,16 +54,17 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  Future<void> _loadData() async {
-    final list = await FirebaseAuthService().getAllPedagang();
-    if (mounted) {
-      setState(() {
-        _pedagangList = list;
-        _isLoading = false;
-      });
-      _checkLocationPermission();
-      _updateMarkers(isDarkModeNotifier.value);
-    }
+  void _loadData() {
+    _pedagangSubscription = FirebaseAuthService().streamAllPedagang().listen((list) {
+      if (mounted) {
+        setState(() {
+          _pedagangList = list;
+          _isLoading = false;
+        });
+        _updateMarkers(isDarkModeNotifier.value);
+      }
+    });
+    _checkLocationPermission();
   }
 
   LatLng _getSellerLocation(UserModelFirebase seller) {

@@ -11,6 +11,32 @@ class FirebaseAuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // ===================== REALTIME STREAMS =====================
+
+  // Stream satu user (profil/toko) secara realtime berdasarkan id (uid)
+  Stream<UserModelFirebase?> streamUserById(String id) {
+    return _firestore.collection('users').doc(id).snapshots().map((doc) {
+      if (doc.exists && doc.data() != null) {
+        return UserModelFirebase.fromMap(doc.data() as Map<String, dynamic>);
+      }
+      return null;
+    });
+  }
+
+  // Stream semua pedagang secara realtime (untuk explore, order, beranda pembeli).
+  // Filter dilakukan di sisi klien agar tidak butuh composite index Firestore.
+  Stream<List<UserModelFirebase>> streamAllPedagang() {
+    return _firestore.collection('users').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => UserModelFirebase.fromMap(doc.data()))
+          .where((user) =>
+              user.role == 'pedagang' ||
+              user.role == 'pedagang_dan_pembeli' ||
+              (user.namaToko != null && user.namaToko!.isNotEmpty))
+          .toList();
+    });
+  }
+
   // Fungsi Register CREATE
   Future<bool> registerUser(UserModelFirebase pengguna) async {
     try {

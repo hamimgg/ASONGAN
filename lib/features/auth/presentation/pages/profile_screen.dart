@@ -1,7 +1,7 @@
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
 import 'package:asongan_app/main.dart';
@@ -15,7 +15,7 @@ class ProfileScreen extends StatefulWidget {
 }
 
 class _ProfileScreenState extends State<ProfileScreen> {
-  UserModelSql? _user;
+  UserModelFirebase? _user;
   String _activeMode = 'pembeli';
 
   @override
@@ -41,7 +41,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
     // Jika user pindah ke mode pedagang dan belum memiliki role pedagang di database, perbarui role-nya
     if (newMode == 'pedagang' && _user != null) {
       if (_user!.role == 'pembeli') {
-        final updatedUser = UserModelSql(
+        final updatedUser = UserModelFirebase(
           id: _user!.id,
           email: _user!.email,
           password: _user!.password,
@@ -54,8 +54,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
           statusJualan: _user!.statusJualan,
           jamOperasional: _user!.jamOperasional,
           lokasi: _user!.lokasi,
+          fotoToko: _user!.fotoToko,
         );
-        await DBHelper().updateUser(updatedUser);
+        await FirebaseAuthService().updateUser(updatedUser);
         await AuthService.saveUserSession(updatedUser);
         setState(() {
           _user = updatedUser;
@@ -74,18 +75,19 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
-  Future<void> _showEditProfileDialog() async {
+  Future<void> _showEditProfileDialog(UserModelFirebase? user) async {
     final Color scaffoldBg = AppColors.scaffoldBg(isDarkModeNotifier.value);
-    if (_user == null) return;
+    final currentUser = user ?? _user;
+    if (currentUser == null) return;
 
     final TextEditingController nameController = TextEditingController(
-      text: _user!.nama,
+      text: currentUser.nama,
     );
     final TextEditingController emailController = TextEditingController(
-      text: _user!.email,
+      text: currentUser.email,
     );
     final TextEditingController phoneController = TextEditingController(
-      text: _user!.telepon,
+      text: currentUser.telepon,
     );
 
     await showDialog(
@@ -104,17 +106,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 TextField(
                   controller: nameController,
                   decoration: const InputDecoration(labelText: 'Nama Lengkap'),
-                  // style: const TextStyle(color: Colors.white),
                 ),
                 TextField(
                   controller: emailController,
                   decoration: const InputDecoration(labelText: 'Email'),
-                  // style: const TextStyle(color: Colors.white),
                 ),
                 TextField(
                   controller: phoneController,
                   decoration: const InputDecoration(labelText: 'Nomor Telepon'),
-                  // style: const TextStyle(color: Colors.white),
                 ),
               ],
             ),
@@ -129,21 +128,22 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 backgroundColor: const Color(0xFFf5a623),
               ),
               onPressed: () async {
-                final updatedUser = UserModelSql(
-                  id: _user!.id,
+                final updatedUser = UserModelFirebase(
+                  id: currentUser.id,
                   email: emailController.text,
-                  password: _user!.password,
+                  password: currentUser.password,
                   nama: nameController.text,
                   telepon: phoneController.text,
-                  role: _user!.role,
-                  namaToko: _user!.namaToko,
-                  jenisProduk: _user!.jenisProduk,
-                  namaMakanan: _user!.namaMakanan,
-                  statusJualan: _user!.statusJualan,
-                  jamOperasional: _user!.jamOperasional,
-                  lokasi: _user!.lokasi,
+                  role: currentUser.role,
+                  namaToko: currentUser.namaToko,
+                  jenisProduk: currentUser.jenisProduk,
+                  namaMakanan: currentUser.namaMakanan,
+                  statusJualan: currentUser.statusJualan,
+                  jamOperasional: currentUser.jamOperasional,
+                  lokasi: currentUser.lokasi,
+                  fotoToko: currentUser.fotoToko,
                 );
-                final success = await DBHelper().updateUser(updatedUser);
+                final success = await FirebaseAuthService().updateUser(updatedUser);
                 if (success) {
                   await AuthService.saveUserSession(updatedUser);
                   setState(() {
@@ -180,132 +180,133 @@ class _ProfileScreenState extends State<ProfileScreen> {
         final Color textColor = AppColors.textPrimary(isDark);
         final Color subtitleColor = AppColors.textSubtitle(isDark);
 
-        return Scaffold(
-          backgroundColor: scaffoldBg,
-          // appBar: PreferredSize(
-          //   preferredSize: const Size.fromHeight(80),
-          //   child: AsonganAppBar(
-          //     title: "Profil Anda",
-          //     isDark: isDark,
-          //     showThemeToggle: true,
-          //   ),
-          // ),
-          body: SingleChildScrollView(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              children: [
-                // Profile Card
-                Container(
-                  width: double.infinity,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: cardBg,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: cardBorder),
-                  ),
-                  child: Column(
-                    children: [
-                      CircleAvatar(
-                        radius: 40,
-                        backgroundColor: AppColors.accent.withValues(
-                          alpha: 0.2,
-                        ),
-                        child: Icon(
-                          Icons.person_rounded,
-                          size: 40,
-                          color: AppColors.accent,
-                        ),
+        return StreamBuilder<UserModelFirebase?>(
+          stream: _user?.id != null
+              ? FirebaseAuthService().streamUserById(_user!.id!)
+              : const Stream.empty(),
+          builder: (context, snapshot) {
+            final user = snapshot.data ?? _user;
+
+            return Scaffold(
+              backgroundColor: scaffoldBg,
+              body: SingleChildScrollView(
+                padding: const EdgeInsets.all(16.0),
+                child: Column(
+                  children: [
+                    // Profile Card
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(20),
+                      decoration: BoxDecoration(
+                        color: cardBg,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(color: cardBorder),
                       ),
-                      const SizedBox(height: 16),
-                      Text(
-                        _user?.nama ?? "User Name",
-                        style: TextStyle(
-                          color: textColor,
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          fontFamily: 'Plus Jakarta Sans',
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _user?.email ?? "email@example.com",
-                        style: TextStyle(
-                          color: subtitleColor,
-                          fontSize: 14,
-                          fontFamily: 'Plus Jakarta Sans',
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 4,
-                        ),
-                        decoration: BoxDecoration(
-                          color: AppColors.inputFill(isDark),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Text(
-                          "Mode: ${_activeMode.toUpperCase()}",
-                          style: TextStyle(
-                            color: textColor,
-                            fontSize: 12,
-                            fontWeight: FontWeight.bold,
-                            fontFamily: 'Plus Jakarta Sans',
+                      child: Column(
+                        children: [
+                          CircleAvatar(
+                            radius: 40,
+                            backgroundColor: AppColors.accent.withValues(
+                              alpha: 0.2,
+                            ),
+                            child: Icon(
+                              Icons.person_rounded,
+                              size: 40,
+                              color: AppColors.accent,
+                            ),
                           ),
-                        ),
+                          const SizedBox(height: 16),
+                          Text(
+                            user?.nama ?? "User Name",
+                            style: TextStyle(
+                              color: textColor,
+                              fontSize: 20,
+                              fontWeight: FontWeight.bold,
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            user?.email ?? "email@example.com",
+                            style: TextStyle(
+                              color: subtitleColor,
+                              fontSize: 14,
+                              fontFamily: 'Plus Jakarta Sans',
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 12,
+                              vertical: 4,
+                            ),
+                            decoration: BoxDecoration(
+                              color: AppColors.inputFill(isDark),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                            child: Text(
+                              "Mode: ${_activeMode.toUpperCase()}",
+                              style: TextStyle(
+                                color: textColor,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold,
+                                fontFamily: 'Plus Jakarta Sans',
+                              ),
+                            ),
+                          ),
+                        ],
                       ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                    ),
+                    const SizedBox(height: 24),
 
-                // Actions
-                _buildActionItem(
-                  icon: Icons.edit_rounded,
-                  title: "Edit Profil",
-                  subtitle: "Ubah nama, email, atau telepon",
-                  iconColor: AppColors.accent,
-                  textColor: textColor,
-                  subtitleColor: subtitleColor,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  onTap: _showEditProfileDialog,
-                ),
-                const SizedBox(height: 12),
-                _buildActionItem(
-                  icon: Icons.swap_horiz_rounded,
-                  title: "Ganti Role (Switch Mode)",
-                  subtitle: "Ubah mode antara Pembeli dan Pedagang",
-                  iconColor: AppColors.accent,
-                  textColor: textColor,
-                  subtitleColor: subtitleColor,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  onTap: _switchRole,
-                ),
-                const SizedBox(height: 12),
-                _buildActionItem(
-                  icon: Icons.settings_rounded,
-                  title: "Pengaturan",
-                  subtitle: "Atur preferensi aplikasi Anda",
-                  iconColor: textColor,
-                  textColor: textColor,
-                  subtitleColor: subtitleColor,
-                  cardBg: cardBg,
-                  cardBorder: cardBorder,
-                  onTap: () {
-                    // Navigate to settings (if exists)
-                    Navigator.push(
-                      context,
-                      MaterialPageRoute(builder: (context) => SettingsScreen()),
-                    );
-                  },
-                ),
+                    // Actions
+                    _buildActionItem(
+                      icon: Icons.edit_rounded,
+                      title: "Edit Profil",
+                      subtitle: "Ubah nama, email, atau telepon",
+                      iconColor: AppColors.accent,
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      cardBg: cardBg,
+                      cardBorder: cardBorder,
+                      onTap: () => _showEditProfileDialog(user),
+                    ),
+                    const SizedBox(height: 12),
+                    _buildActionItem(
+                      icon: Icons.swap_horiz_rounded,
+                      title: "Ganti Role (Switch Mode)",
+                      subtitle: "Ubah mode antara Pembeli dan Pedagang",
+                      iconColor: AppColors.accent,
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      cardBg: cardBg,
+                      cardBorder: cardBorder,
+                      onTap: _switchRole,
+                    ),
+                    const SizedBox(height: 12),
+                    _buildActionItem(
+                      icon: Icons.settings_rounded,
+                      title: "Pengaturan",
+                      subtitle: "Atur preferensi aplikasi Anda",
+                      iconColor: textColor,
+                      textColor: textColor,
+                      subtitleColor: subtitleColor,
+                      cardBg: cardBg,
+                      cardBorder: cardBorder,
+                      onTap: () {
+                        // Navigate to settings (if exists)
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (context) => SettingsScreen()),
+                        );
+                      },
+                    ),
 
-              ],
-            ),
-          ),
+                  ],
+                ),
+              ),
+            );
+          },
         );
       },
     );

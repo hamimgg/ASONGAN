@@ -1,12 +1,15 @@
 import 'dart:io';
+import 'package:asongan_app/core/services/firebase_product_service.dart';
 import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geolocator/geolocator.dart';
 
 class StoreDetailScreen extends StatefulWidget {
   const StoreDetailScreen({super.key});
@@ -16,7 +19,7 @@ class StoreDetailScreen extends StatefulWidget {
 }
 
 class _StoreDetailScreenState extends State<StoreDetailScreen> {
-  UserModelSql? _currentUser;
+  UserModelFirebase? _currentUser;
   bool _isLoading = true;
 
   // Form states
@@ -46,19 +49,14 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   }
 
   Future<void> _loadStoreDetails() async {
-    final user = await AuthService.getUserSession();
-    if (user != null && user.id != null) {
-      var dbUser = await DBHelper().getUserById(user.id!);
-      if (dbUser == null) {
-        // User exists in SharedPreferences but not in SQLite (e.g. wiped database).
-        // Let's re-insert the user into the SQLite database.
-        await DBHelper().registerUser(user);
-        dbUser = await DBHelper().getUserById(user.id!) ?? user;
-      }
+    final session = await AuthService.getUserSession();
+    if (session != null && session.id != null) {
+      // Ambil data terbaru dari Firestore (fallback ke session bila belum ada)
+      final fbUser =
+          await FirebaseAuthService().getUserById(session.id!) ?? session;
 
-      final UserModelSql activeUser = dbUser;
-
-      final products = await DBHelper().getProductsByPedagang(activeUser.id!);
+      final products =
+          await FirebaseProductService().getProductsByPedagang(fbUser.id!);
 
       List<String> bestSelling = [];
       for (int i = 0; i < products.length && i < 3; i++) {
@@ -73,17 +71,16 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       }
 
       File? imgFile;
-      if (activeUser.fotoToko != null && activeUser.fotoToko!.isNotEmpty) {
-        imgFile = File(activeUser.fotoToko!);
+      if (fbUser.fotoToko != null && fbUser.fotoToko!.isNotEmpty) {
+        imgFile = File(fbUser.fotoToko!);
       }
 
       setState(() {
-        _currentUser = activeUser;
-        _statusJualan = activeUser.statusJualan ?? true;
-        _jamController.text = activeUser.jamOperasional ?? '';
-        _lokasiController.text = activeUser.lokasi ?? '';
-        _namaTokoController.text =
-            activeUser.namaToko ?? activeUser.nama ?? '';
+        _currentUser = fbUser;
+        _statusJualan = fbUser.statusJualan ?? true;
+        _jamController.text = fbUser.jamOperasional ?? '';
+        _lokasiController.text = fbUser.lokasi ?? '';
+        _namaTokoController.text = fbUser.namaToko ?? fbUser.nama ?? '';
         _bestSellingMenu = bestSelling;
         _lowStockMenu = lowStock;
         _storeImageFile = imgFile;
@@ -94,6 +91,90 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
     setState(() {
       _isLoading = false;
     });
+  }
+
+  Future<void> _updateCurrentLocation() async {
+    bool serviceEnabled;
+    LocationPermission permission;
+
+    serviceEnabled = await Geolocator.isLocationServiceEnabled();
+    if (!serviceEnabled) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Layanan lokasi dinonaktifkan. Silakan aktifkan GPS Anda.')),
+        );
+      }
+      return;
+    }
+
+    permission = await Geolocator.checkPermission();
+    if (permission == LocationPermission.denied) {
+      permission = await Geolocator.requestPermission();
+      if (permission == LocationPermission.denied) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(content: Text('Izin lokasi ditolak.')),
+          );
+        }
+        return;
+      }
+    }
+
+    if (permission == LocationPermission.deniedForever) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Izin lokasi ditolak secara permanen.')),
+        );
+      }
+      return;
+    }
+
+    setState(() {
+      _isLoading = true;
+    });
+
+    try {
+      final position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      
+      List<Placemark> placemarks = await Geocoding().placemarkFromCoordinates(position.latitude, position.longitude);
+      String address = "Lokasi terdeteksi";
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks[0];
+        final street = place.street ?? '';
+        final subLocality = place.subLocality ?? '';
+        final locality = place.locality ?? '';
+        address = "$street, $subLocality, $locality".trim();
+        address = address.replaceAll(RegExp(r'^,\s*|,\s*$'), '');
+      } else {
+        address = "${position.latitude.toStringAsFixed(6)}, ${position.longitude.toStringAsFixed(6)}";
+      }
+
+      setState(() {
+        _lokasiController.text = address;
+        _isLoading = false;
+      });
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Lokasi berhasil diperbarui: $address'),
+            backgroundColor: const Color(0xFF4CD964),
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint("Error getting location: $e");
+      setState(() {
+        _isLoading = false;
+      });
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Gagal mendapatkan lokasi: $e')),
+        );
+      }
+    }
   }
 
   Future<void> _pickStoreImage() async {
@@ -108,7 +189,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   Future<void> _saveSettings() async {
     if (_currentUser == null) return;
 
-    final updatedUser = UserModelSql(
+    final updatedUser = UserModelFirebase(
       id: _currentUser!.id,
       email: _currentUser!.email,
       password: _currentUser!.password,
@@ -124,34 +205,8 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
       fotoToko: _storeImageFile != null ? _storeImageFile!.path : (_currentUser!.fotoToko ?? ''),
     );
 
-    // Coba update data user di database SQLite
-    bool success = await DBHelper().updateUser(updatedUser);
-
-    // Jika gagal (karena user tidak ada di database SQLite), coba daftarkan ulang user
-    if (!success) {
-      final existing = await DBHelper().getUserByEmail(updatedUser.email);
-      if (existing == null) {
-        success = await DBHelper().registerUser(updatedUser);
-      } else {
-        // Jika ada dengan ID berbeda, update dengan ID yang sesuai
-        final userWithCorrectId = UserModelSql(
-          id: existing.id,
-          email: updatedUser.email,
-          password: updatedUser.password,
-          nama: updatedUser.nama,
-          telepon: updatedUser.telepon,
-          role: updatedUser.role,
-          namaToko: updatedUser.namaToko,
-          jenisProduk: updatedUser.jenisProduk,
-          namaMakanan: updatedUser.namaMakanan,
-          statusJualan: updatedUser.statusJualan,
-          jamOperasional: updatedUser.jamOperasional,
-          lokasi: updatedUser.lokasi,
-          fotoToko: updatedUser.fotoToko,
-        );
-        success = await DBHelper().updateUser(userWithCorrectId);
-      }
-    }
+    // Simpan pengaturan toko langsung ke Firestore (realtime untuk pembeli)
+    final bool success = await FirebaseAuthService().updateUser(updatedUser);
 
     if (success) {
       await AuthService.saveUserSession(updatedUser);
@@ -588,9 +643,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
           const SizedBox(height: 8),
           TextField(
             controller: _lokasiController,
-            enabled: false,
+            readOnly: true,
             style: TextStyle(
-              color: textColor.withValues(alpha: 0.5),
+              color: textColor,
               fontSize: 14,
               fontFamily: 'Plus Jakarta Sans',
             ),
@@ -601,19 +656,31 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
                 fontSize: 14,
               ),
               filled: true,
-              fillColor: inputFill.withValues(alpha: 0.5),
+              fillColor: inputFill,
               contentPadding: const EdgeInsets.symmetric(
                 horizontal: 16,
                 vertical: 12,
+              ),
+              suffixIcon: IconButton(
+                icon: const Icon(
+                  Icons.my_location_rounded,
+                  color: AppColors.accent,
+                ),
+                onPressed: _updateCurrentLocation,
               ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
                 borderSide: BorderSide(color: inputBorder),
               ),
-              disabledBorder: OutlineInputBorder(
+              enabledBorder: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(12),
-                borderSide: BorderSide(
-                  color: inputBorder.withValues(alpha: 0.5),
+                borderSide: BorderSide(color: inputBorder),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: const BorderSide(
+                  color: AppColors.accent,
+                  width: 1.5,
                 ),
               ),
             ),

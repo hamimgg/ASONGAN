@@ -8,6 +8,32 @@ class FirebaseProductService {
 
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  // ===================== REALTIME STREAMS =====================
+
+  // Stream semua produk secara realtime (untuk beranda pembeli)
+  Stream<List<ProductModelFirebase>> streamAllProducts() {
+    return _firestore.collection('products').snapshots().map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ProductModelFirebase.fromMap(doc.data(), docId: doc.id))
+          .toList();
+    });
+  }
+
+  // Stream produk milik satu pedagang secara realtime (untuk kelola dagangan & detail toko)
+  Stream<List<ProductModelFirebase>> streamProductsByPedagang(String pedagangId) {
+    return _firestore
+        .collection('products')
+        .where('pedagang_id', isEqualTo: pedagangId)
+        .snapshots()
+        .map((snapshot) {
+      return snapshot.docs
+          .map((doc) => ProductModelFirebase.fromMap(doc.data(), docId: doc.id))
+          .toList();
+    });
+  }
+
+  // ===================== ONE-TIME READS =====================
+
   // Get all products
   Future<List<ProductModelFirebase>> getAllProducts() async {
     try {

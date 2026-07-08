@@ -1,9 +1,7 @@
 import 'package:asongan_app/core/animations/animation_background.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
 import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
 import 'package:asongan_app/features/auth/presentation/pages/register_screen.dart';
 import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/main.dart';
@@ -475,56 +473,18 @@ class _LoginPageState extends State<LoginPage>
       if (!mounted) return;
 
       if (fbResult != null) {
-        // 2. Cek apakah user ada di local SQLite database
-        UserModelSql? result = await DBHelper().getUserByEmail(fbResult.email);
-
-        if (result == null) {
-          // Jika tidak ada di SQLite local, register kan ke SQLite local
-          final newUserSql = fbResult.toSql();
-          await DBHelper().registerUser(newUserSql);
-          // Ambil kembali data user dari SQLite local agar memiliki ID integer auto-increment
-          result = await DBHelper().getUserByEmail(fbResult.email);
-        } else {
-          // Jika ada di SQLite local, update data profilnya agar sinkron dengan Firestore
-          final updatedUserSql = UserModelSql(
-            id: result.id,
-            email: fbResult.email,
-            password: fbResult.password,
-            nama: fbResult.nama,
-            telepon: fbResult.telepon,
-            role: fbResult.role,
-            namaToko: fbResult.namaToko,
-            jenisProduk: fbResult.jenisProduk,
-            namaMakanan: fbResult.namaMakanan,
-            statusJualan: fbResult.statusJualan,
-            jamOperasional: fbResult.jamOperasional,
-            lokasi: fbResult.lokasi,
-          );
-          await DBHelper().updateUser(updatedUserSql);
-          result = updatedUserSql;
-        }
-
-        if (result == null) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("Gagal mensinkronisasikan akun lokal."),
-            ),
-          );
-          return;
-        }
-
-        // 3. Validasi Role
-        if (result.role != (pembeli ? 'pembeli' : 'pedagang') &&
-            result.role != 'pedagang_dan_pembeli' &&
-            result.role != null) {
+        // 2. Validasi Role (data langsung dari Firestore)
+        if (fbResult.role != (pembeli ? 'pembeli' : 'pedagang') &&
+            fbResult.role != 'pedagang_dan_pembeli' &&
+            fbResult.role != null) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text("Role tidak sesuai dengan akun ini.")),
           );
           return;
         }
 
-        // 4. Simpan Session
-        await AuthService.saveUserSession(result);
+        // 3. Simpan Session (UserModelFirebase, membawa uid Firebase)
+        await AuthService.saveUserSession(fbResult);
         if (!mounted) return;
 
         Navigator.pushReplacement(
