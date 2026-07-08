@@ -20,6 +20,7 @@ UserModelFirebase _$UserModelFirebaseFromJson(Map<String, dynamic> json) =>
       statusJualan: _boolFromStatus(json['status_jualan']),
       jamOperasional: json['jam_operasional'] as String?,
       lokasi: json['lokasi'] as String?,
+      fotoToko: json['foto_toko'] as String?,
     );
 
 Map<String, dynamic> _$UserModelFirebaseToJson(UserModelFirebase instance) =>
@@ -36,4 +37,5 @@ Map<String, dynamic> _$UserModelFirebaseToJson(UserModelFirebase instance) =>
       'status_jualan': _statusToBool(instance.statusJualan),
       'jam_operasional': instance.jamOperasional,
       'lokasi': instance.lokasi,
+      'foto_toko': instance.fotoToko,
     };

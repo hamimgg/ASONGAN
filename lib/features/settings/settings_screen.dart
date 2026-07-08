@@ -3,7 +3,7 @@ import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
+
 
 class SettingsScreen extends StatefulWidget {
   const SettingsScreen({super.key});
@@ -13,28 +13,7 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
-  bool _notificationsEnabled = true;
 
-  @override
-  void initState() {
-    super.initState();
-    _loadNotificationPreference();
-  }
-
-  Future<void> _loadNotificationPreference() async {
-    final prefs = await SharedPreferences.getInstance();
-    setState(() {
-      _notificationsEnabled = prefs.getBool('notifications_enabled') ?? true;
-    });
-  }
-
-  Future<void> _toggleNotifications(bool value) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('notifications_enabled', value);
-    setState(() {
-      _notificationsEnabled = value;
-    });
-  }
 
   Future<void> _handleLogout() async {
     await AuthService.clearSession();
@@ -89,31 +68,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _buildSectionHeader("Preferensi Aplikasi", isDark),
-                const SizedBox(height: 8),
-                _buildCardGroup(
-                  isDark: isDark,
-                  children: [
-                    _buildSettingsTile(
-                      icon: Icons.notifications_none_rounded,
-                      title: "Notifikasi",
-                      subtitle: "Dapatkan info penawaran & pedagang",
-                      isDark: isDark,
-                      trailing: Switch(
-                        value: _notificationsEnabled,
-                        activeThumbColor: AppColors.accent,
-                        onChanged: _toggleNotifications,
-                      ),
-                    ),
-                    _buildSettingsTile(
-                      icon: Icons.translate_rounded,
-                      title: "Bahasa",
-                      subtitle: "Bahasa Indonesia",
-                      isDark: isDark,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
+
                 _buildSectionHeader("Dukungan & Bantuan", isDark),
                 const SizedBox(height: 8),
                 _buildCardGroup(

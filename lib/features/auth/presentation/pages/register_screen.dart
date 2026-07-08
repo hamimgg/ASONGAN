@@ -23,6 +23,7 @@ class _RegisterPageState extends State<RegisterPage> {
   final TextEditingController namaTokoController = TextEditingController();
   final TextEditingController namaMakananController = TextEditingController();
   String? jenisProduk;
+  bool _isAgreeTc = false;
 
   final List<String> listJenisProduk = [
     'Makanan Berat',
@@ -246,8 +247,53 @@ class _RegisterPageState extends State<RegisterPage> {
                                       : null,
                                 ),
                               ],
+                              const SizedBox(height: 20),
 
-                              const SizedBox(height: 32),
+                              // Syarat & Ketentuan Checkbox
+                              Row(
+                                children: [
+                                  Checkbox(
+                                    value: _isAgreeTc,
+                                    onChanged: (val) {
+                                      setState(() {
+                                        _isAgreeTc = val ?? false;
+                                      });
+                                    },
+                                    activeColor: const Color(0xFFF5A623),
+                                    checkColor: const Color(0xFF1C1C1E),
+                                  ),
+                                  Expanded(
+                                    child: GestureDetector(
+                                      onTap: () => _showTermsDialog(context, isDark),
+                                      child: RichText(
+                                        text: TextSpan(
+                                          text: 'Saya menyetujui ',
+                                          style: TextStyle(
+                                            color: textColor.withValues(alpha: 0.7),
+                                            fontSize: 13,
+                                            fontFamily: 'Plus Jakarta Sans',
+                                          ),
+                                          children: const [
+                                            TextSpan(
+                                              text: 'Syarat & Ketentuan',
+                                              style: TextStyle(
+                                                color: Color(0xFFF5A623),
+                                                fontWeight: FontWeight.bold,
+                                                decoration: TextDecoration.underline,
+                                              ),
+                                            ),
+                                            TextSpan(
+                                              text: ' Layanan Asongan.',
+                                            ),
+                                          ],
+                                        ),
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+
+                              const SizedBox(height: 24),
                               SizedBox(
                                 width: double.infinity,
                                 height: 48,
@@ -261,6 +307,16 @@ class _RegisterPageState extends State<RegisterPage> {
                                     elevation: 0,
                                   ),
                                   onPressed: () async {
+                                    if (!_isAgreeTc) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        const SnackBar(
+                                          content: Text("Anda harus menyetujui Syarat & Ketentuan untuk mendaftar."),
+                                          backgroundColor: Colors.redAccent,
+                                          behavior: SnackBarBehavior.floating,
+                                        ),
+                                      );
+                                      return;
+                                    }
                                     if (_formKey.currentState!.validate()) {
                                       final newUser = UserModelFirebase(
                                         nama: namaController.text,
@@ -386,6 +442,116 @@ class _RegisterPageState extends State<RegisterPage> {
             }
             return null;
           },
+    );
+  }
+
+  void _showTermsDialog(BuildContext context, bool isDark) {
+    final textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final cardBg = isDark ? const Color(0xFF2A2A2C) : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: cardBg,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Text(
+            "Syarat & Ketentuan Layanan Asongan",
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontSize: 18,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          content: SizedBox(
+            width: double.maxFinite,
+            height: MediaQuery.of(context).size.height * 0.5,
+            child: SingleChildScrollView(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _buildTermSection(
+                    title: "1. Pendahuluan",
+                    content: "Selamat datang di Asongan. Aplikasi ini menghubungkan pedagang jajanan/kuliner lokal dengan pembeli terdekat untuk melestarikan dan memudahkan transaksi jajanan tradisional secara digital.",
+                    textColor: textColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTermSection(
+                    title: "2. Akun & Keamanan",
+                    content: "Pengguna wajib memberikan informasi yang akurat dan valid pada saat registrasi. Anda bertanggung jawab penuh atas keamanan kredensial akun Anda.",
+                    textColor: textColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTermSection(
+                    title: "3. Ketentuan Pedagang (Penjual)",
+                    content: "Pedagang berkomitmen untuk menyajikan produk jajanan yang bersih, higienis, dan sesuai dengan deskripsi yang dipajang. Pedagang juga wajib melayani setiap pembeli dengan ramah dan menjunjung nilai kejujuran.",
+                    textColor: textColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTermSection(
+                    title: "4. Ketentuan Pembeli",
+                    content: "Pembeli berkomitmen untuk menyelesaikan transaksi pembayaran pesanan secara bertanggung jawab (melalui metode yang tersedia, seperti bayar di tempat/COD atau metode lain). Pembeli dilarang melakukan pembatalan sepihak secara berulang demi menghargai usaha pedagang kecil.",
+                    textColor: textColor,
+                  ),
+                  const SizedBox(height: 12),
+                  _buildTermSection(
+                    title: "5. Keamanan & Kenyamanan Bersama",
+                    content: "Setiap bentuk kecurangan, transaksi fiktif, spamming, dan perilaku tidak etis akan ditindak tegas dengan pemblokiran akun secara permanen dari sistem Asongan.",
+                    textColor: textColor,
+                  ),
+                ],
+              ),
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                "Tutup",
+                style: TextStyle(
+                  color: Color(0xFFF5A623),
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Widget _buildTermSection({
+    required String title,
+    required String content,
+    required Color textColor,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            color: textColor,
+            fontWeight: FontWeight.bold,
+            fontSize: 14,
+            fontFamily: 'Plus Jakarta Sans',
+          ),
+        ),
+        const SizedBox(height: 4),
+        Text(
+          content,
+          style: TextStyle(
+            color: textColor.withValues(alpha: 0.7),
+            fontSize: 13,
+            height: 1.4,
+            fontFamily: 'Plus Jakarta Sans',
+          ),
+        ),
+      ],
     );
   }
 }

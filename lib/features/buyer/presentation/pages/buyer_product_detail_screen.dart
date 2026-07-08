@@ -1,21 +1,25 @@
 import 'dart:io';
 
 import 'package:asongan_app/core/theme/app_colors.dart';
-import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
-class BuyerProductDetailScreen extends StatelessWidget {
-  final ProductModelSql? dbProduct;
-  final RecommendedProduct? dummyProduct;
+class BuyerProductDetailScreen extends StatefulWidget {
+  final ProductModelFirebase product;
 
   const BuyerProductDetailScreen({
     super.key,
-    this.dbProduct,
-    this.dummyProduct,
+    required this.product,
   });
+
+  @override
+  State<BuyerProductDetailScreen> createState() => _BuyerProductDetailScreenState();
+}
+
+class _BuyerProductDetailScreenState extends State<BuyerProductDetailScreen> {
+  bool _isFavorited = false;
 
   @override
   Widget build(BuildContext context) {
@@ -27,30 +31,22 @@ class BuyerProductDetailScreen extends StatelessWidget {
         final Color subtitleColor = AppColors.textSubtitle(isDark);
         final Color cardBorder = AppColors.divider(isDark);
 
-        final bool isReal = dbProduct != null;
-
-        final String pName = isReal
-            ? dbProduct!.namaProduk
-            : dummyProduct!.name;
-        final double pPrice = isReal
-            ? dbProduct!.harga
-            : dummyProduct!.price.toDouble();
-        final String pImage = isReal
-            ? dbProduct!.imagePath
-            : dummyProduct!.imagePath;
+        final String pName = widget.product.namaProduk;
+        final double pPrice = widget.product.harga;
+        final String pImage = widget.product.imagePath;
         final bool pIsLocal =
-            isReal && pImage.isNotEmpty && !pImage.startsWith('assets/');
-        final String pDesc = isReal
-            ? (dbProduct!.deskripsi ?? "Tidak ada deskripsi.")
-            : "Nikmati jajanan khas yang lezat ini. Dibuat dengan bahan-bahan pilihan yang segar.";
+            pImage.isNotEmpty && !pImage.startsWith('assets/');
+        final String pDesc = widget.product.deskripsi.isNotEmpty
+            ? widget.product.deskripsi
+            : "Tidak ada deskripsi.";
 
-        final String pKategori = isReal
-            ? (dbProduct!.kategori ?? "Umum")
-            : "Makanan ringan";
-        final String pVariasi = isReal
-            ? (dbProduct!.variasi ?? "Tidak ada variasi")
-            : "Standar";
-        final bool isAvailable = isReal ? dbProduct!.isTersedia : true;
+        final String pKategori = widget.product.kategori.isNotEmpty
+            ? widget.product.kategori
+            : "Umum";
+        final String pVariasi = widget.product.variasi.isNotEmpty
+            ? widget.product.variasi
+            : "Tidak ada variasi";
+        final bool isAvailable = widget.product.isTersedia;
 
         final formatCurrency = NumberFormat.currency(
           locale: 'id_ID',
@@ -217,66 +213,48 @@ class BuyerProductDetailScreen extends StatelessWidget {
                   color: scaffoldBg,
                   border: Border(top: BorderSide(color: cardBorder)),
                 ),
-                child: Row(
-                  children: [
-                    Container(
-                      height: 50,
-                      width: 50,
-                      decoration: BoxDecoration(
-                        border: Border.all(color: AppColors.accent),
+                child: SizedBox(
+                  width: double.infinity,
+                  height: 50,
+                  child: OutlinedButton(
+                    onPressed: () {
+                      setState(() {
+                        _isFavorited = !_isFavorited;
+                      });
+                      ScaffoldMessenger.of(context).clearSnackBars();
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        SnackBar(
+                          content: Text(
+                            _isFavorited
+                                ? '$pName ditambahkan ke favorit!'
+                                : '$pName dihapus dari favorit!',
+                          ),
+                          backgroundColor: _isFavorited
+                              ? const Color(0xFFFF2D55)
+                              : AppColors.textSubtitle(isDark),
+                          behavior: SnackBarBehavior.floating,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          duration: const Duration(seconds: 2),
+                        ),
+                      );
+                    },
+                    style: OutlinedButton.styleFrom(
+                      side: BorderSide(
+                        color: _isFavorited ? const Color(0xFFFF2D55) : AppColors.accent,
+                        width: 1.5,
+                      ),
+                      shape: RoundedRectangleBorder(
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Center(
-                        child: Icon(
-                          Icons.favorite_border_rounded,
-                          color: AppColors.accent,
-                        ),
-                      ),
+                      foregroundColor: _isFavorited ? const Color(0xFFFF2D55) : AppColors.accent,
                     ),
-                    const SizedBox(width: 16),
-                    Expanded(
-                      child: SizedBox(
-                        height: 50,
-                        child: ElevatedButton(
-                          onPressed: isAvailable
-                              ? () {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    SnackBar(
-                                      content: Text(
-                                        '$pName berhasil ditambahkan ke pesanan!',
-                                      ),
-                                      backgroundColor: const Color(0xFF4CD964),
-                                      behavior: SnackBarBehavior.floating,
-                                      shape: RoundedRectangleBorder(
-                                        borderRadius: BorderRadius.circular(10),
-                                      ),
-                                    ),
-                                  );
-                                }
-                              : null,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.accent,
-                            foregroundColor: Colors.white,
-                            disabledBackgroundColor: subtitleColor.withValues(
-                              alpha: 0.3,
-                            ),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            "Tambah ke Pesanan",
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                              fontFamily: 'Plus Jakarta Sans',
-                            ),
-                          ),
-                        ),
-                      ),
+                    child: Icon(
+                      _isFavorited ? Icons.favorite_rounded : Icons.favorite_border_rounded,
+                      color: _isFavorited ? const Color(0xFFFF2D55) : AppColors.accent,
                     ),
-                  ],
+                  ),
                 ),
               ),
             ],

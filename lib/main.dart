@@ -1,4 +1,6 @@
+import 'package:asongan_app/core/services/firebase_seeder.dart';
 import 'package:asongan_app/features/auth/presentation/pages/splash_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 
@@ -9,6 +11,16 @@ final ValueNotifier<bool> isDarkModeNotifier = ValueNotifier<bool>(false);
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Mengaktifkan Firestore Offline Persistence
+  FirebaseFirestore.instance.settings = const Settings(
+    persistenceEnabled: true,
+    cacheSizeBytes: Settings.CACHE_SIZE_UNLIMITED,
+  );
+
+  // Seed data dummy ke Firebase Firestore
+  await FirebaseSeeder.seedDummyData();
+
   runApp(const MyApp());
 }
 

@@ -4,9 +4,8 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -24,7 +23,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['Semua', 'Terdekat', 'Makanan', 'Minuman'];
   final PanelController _panelController = PanelController();
-  List<UserModelSql> _pedagangList = [];
+  List<UserModelFirebase> _pedagangList = [];
   bool _isLoading = true;
 
   GoogleMapController? _mapController;
@@ -53,7 +52,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   }
 
   Future<void> _loadData() async {
-    final list = await DBHelper().getAllPedagang();
+    final list = await FirebaseAuthService().getAllPedagang();
     if (mounted) {
       setState(() {
         _pedagangList = list;
@@ -64,10 +63,10 @@ class _ExploreScreenState extends State<ExploreScreen> {
     }
   }
 
-  LatLng _getSellerLocation(UserModelSql seller) {
+  LatLng _getSellerLocation(UserModelFirebase seller) {
     final seed = (seller.lokasi != null && seller.lokasi!.isNotEmpty)
         ? seller.lokasi.hashCode
-        : (seller.id ?? 0);
+        : (seller.id.hashCode);
     final rand = math.Random(seed);
     // Generate offset between -0.015 and +0.015 degrees (approx 1.5 km)
     final latOffset = -0.015 + (rand.nextDouble() * 0.03);
@@ -119,49 +118,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
               Navigator.push(
                 context,
                 MaterialPageRoute(
-                  builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
-                ),
-              );
-            },
-          ),
-          icon: BitmapDescriptor.defaultMarkerWithHue(
-            isActive ? BitmapDescriptor.hueOrange : BitmapDescriptor.hueRed,
-          ),
-        ),
-      );
-    }
-
-    for (var seller in dummyNearbySellers) {
-      final isActive = seller.isSelling;
-      final isMakanan = seller.name.toLowerCase().contains('siomay') || seller.name.toLowerCase().contains('sate') || seller.name.toLowerCase().contains('batagor');
-      final isMinuman = seller.name.toLowerCase().contains('cendol') || seller.name.toLowerCase().contains('es');
-      final typeStr = isMakanan ? 'Makanan' : (isMinuman ? 'Minuman' : 'Makanan & Minuman');
-
-      if (_selectedFilter == 1 && !isActive) continue; // Terdekat / Aktif
-      if (_selectedFilter == 2 && !isMakanan) continue;
-      if (_selectedFilter == 3 && !isMinuman) continue;
-
-      final seed = seller.distance.hashCode ^ seller.id.hashCode;
-      final rand = math.Random(seed);
-      final latOffset = -0.015 + (rand.nextDouble() * 0.03);
-      final lngOffset = -0.015 + (rand.nextDouble() * 0.03);
-      final sellerLoc = LatLng(
-        -6.2103253010780115 + latOffset,
-        106.81296123124808 + lngOffset,
-      );
-
-      newMarkers.add(
-        Marker(
-          markerId: MarkerId("dummy_seller_${seller.id}"),
-          position: sellerLoc,
-          infoWindow: InfoWindow(
-            title: seller.name,
-            snippet: "$typeStr • ${seller.distance}",
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(
-                  builder: (context) => BuyerStoreDetailScreen(dummySeller: seller),
+                  builder: (context) => BuyerStoreDetailScreen(seller: p),
                 ),
               );
             },
@@ -405,14 +362,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
           //     size: 22,
           //   ),
           // ),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: iconColor,
-              size: 22,
-            ),
-          ),
+
           IconButton(
             onPressed: () => Scaffold.of(context).openEndDrawer(),
             icon: Icon(Icons.menu_rounded, color: iconColor, size: 22),
@@ -646,9 +596,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
         : const Color(0xFFE2E8F0);
     final Color headerColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
-    final activeDbCount = _pedagangList.where((p) => p.statusJualan == true).length;
-    final activeDummyCount = dummyNearbySellers.where((s) => s.isSelling).length;
-    final totalActiveCount = activeDbCount + activeDummyCount;
+    final totalActiveCount = _pedagangList.where((p) => p.statusJualan == true).length;
 
     return Container(
       decoration: BoxDecoration(
@@ -734,7 +682,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
-                                      builder: (context) => BuyerStoreDetailScreen(dbSeller: p),
+                                      builder: (context) => BuyerStoreDetailScreen(seller: p),
                                     ),
                                   );
                                 },
@@ -746,29 +694,6 @@ class _ExploreScreenState extends State<ExploreScreen> {
                                   imagePath: 'assets/images/tukang_bubur.png', // Placeholder
                                   isDark: isDark,
                                   fotoToko: p.fotoToko,
-                                ),
-                              ),
-                            );
-                          }),
-                      ...dummyNearbySellers
-                          .where((s) => s.isSelling)
-                          .map((s) {
-                            return Padding(
-                              padding: const EdgeInsets.only(right: 12),
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) => BuyerStoreDetailScreen(dummySeller: s),
-                                    ),
-                                  );
-                                },
-                                child: _buildPedagangCard(
-                                  name: s.name,
-                                  distance: s.distance,
-                                  imagePath: s.imagePath,
-                                  isDark: isDark,
                                 ),
                               ),
                             );

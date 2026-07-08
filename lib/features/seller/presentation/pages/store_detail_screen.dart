@@ -681,14 +681,7 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
             ),
           ),
           const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: iconColor,
-              size: 22,
-            ),
-          ),
+
           IconButton(
             onPressed: () => Scaffold.of(context).openEndDrawer(),
             icon: Icon(Icons.menu_rounded, color: iconColor, size: 22),

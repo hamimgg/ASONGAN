@@ -72,16 +72,7 @@ class AsonganAppBar extends StatelessWidget {
                 size: 22,
               ),
             ),
-          // Optional: notification bell
-          if (showNotification)
-            IconButton(
-              onPressed: () {},
-              icon: Icon(
-                Icons.notifications_none_rounded,
-                color: iconColor,
-                size: 22,
-              ),
-            ),
+
           // Extra custom actions
           if (extraActions != null) ...extraActions!,
           // Drawer menu button (uses Builder to get inner Scaffold context)

@@ -1,29 +1,26 @@
 import 'dart:io';
 
 import 'package:asongan_app/core/theme/app_colors.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_product_detail_screen.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
+import 'package:asongan_app/core/services/firebase_product_service.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 class BuyerStoreDetailScreen extends StatefulWidget {
-  final UserModelSql? dbSeller;
-  final NearbySeller? dummySeller;
+  final UserModelFirebase seller;
 
-  const BuyerStoreDetailScreen({super.key, this.dbSeller, this.dummySeller});
+  const BuyerStoreDetailScreen({super.key, required this.seller});
 
   @override
   State<BuyerStoreDetailScreen> createState() => _BuyerStoreDetailScreenState();
 }
 
 class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
-  List<ProductModelSql> _dbProducts = [];
-  List<RecommendedProduct> _dummyProducts = [];
+  List<ProductModelFirebase> _dbProducts = [];
   bool _isLoading = true;
 
   @override
@@ -33,18 +30,12 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
   }
 
   Future<void> _loadProducts() async {
-    if (widget.dbSeller != null && widget.dbSeller!.id != null) {
-      final products = await DBHelper().getProductsByPedagang(
-        widget.dbSeller!.id!,
+    if (widget.seller.id != null) {
+      final products = await FirebaseProductService().getProductsByPedagang(
+        widget.seller.id!,
       );
       setState(() {
         _dbProducts = products;
-      });
-    } else if (widget.dummySeller != null) {
-      setState(() {
-        _dummyProducts = dummyRecommendedProducts
-            .where((p) => p.sellerId == widget.dummySeller!.id)
-            .toList();
       });
     }
     setState(() {
@@ -63,31 +54,21 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
         final Color cardBg = AppColors.cardBg(isDark);
         final Color cardBorder = AppColors.cardBorder(isDark);
 
-        final bool isReal = widget.dbSeller != null;
+        final String storeName = (widget.seller.namaToko != null &&
+                  widget.seller.namaToko!.isNotEmpty)
+              ? widget.seller.namaToko!
+              : (widget.seller.nama ?? 'Pedagang');
 
-        final String storeName = isReal
-            ? ((widget.dbSeller!.namaToko != null &&
-                      widget.dbSeller!.namaToko!.isNotEmpty)
-                  ? widget.dbSeller!.namaToko!
-                  : (widget.dbSeller!.nama ?? 'Pedagang'))
-            : widget.dummySeller!.name;
+        final bool isSelling = widget.seller.statusJualan == true;
 
-        final bool isSelling = isReal
-            ? (widget.dbSeller!.statusJualan == true)
-            : widget.dummySeller!.isSelling;
+        final String distance = (widget.seller.lokasi != null &&
+                  widget.seller.lokasi!.isNotEmpty)
+              ? widget.seller.lokasi!
+              : "Lokasi tidak diketahui";
 
-        final String distance = isReal
-            ? ((widget.dbSeller!.lokasi != null &&
-                      widget.dbSeller!.lokasi!.isNotEmpty)
-                  ? widget.dbSeller!.lokasi!
-                  : "Lokasi tidak diketahui")
-            : widget.dummySeller!.distance;
-
-        final double rating = isReal ? 4.8 : widget.dummySeller!.rating;
-        final String imagePath = isReal
-            ? 'assets/images/tukang_bubur.png'
-            : widget.dummySeller!.imagePath;
-        final String? fotoToko = isReal ? widget.dbSeller!.fotoToko : null;
+        final double rating = 4.8;
+        final String imagePath = widget.seller.fotoToko ?? 'assets/images/tukang_bubur.png';
+        final String? fotoToko = widget.seller.fotoToko;
 
         // Fallback info
         const String since = "2024";
@@ -122,16 +103,18 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                     fit: StackFit.expand,
                     children: [
                       fotoToko != null && fotoToko.isNotEmpty
-                          ? Image.file(
-                              File(fotoToko),
-                              fit: BoxFit.cover,
-                              errorBuilder: (context, error, stackTrace) {
-                                return Image.asset(
-                                  'assets/images/tukang_bubur.png',
+                          ? (fotoToko.startsWith('assets/')
+                              ? Image.asset(fotoToko, fit: BoxFit.cover)
+                              : Image.file(
+                                  File(fotoToko),
                                   fit: BoxFit.cover,
-                                );
-                              },
-                            )
+                                  errorBuilder: (context, error, stackTrace) {
+                                    return Image.asset(
+                                      'assets/images/tukang_bubur.png',
+                                      fit: BoxFit.cover,
+                                    );
+                                  },
+                                ))
                           : Image.asset(imagePath, fit: BoxFit.cover),
                       Container(
                         decoration: BoxDecoration(
@@ -287,12 +270,7 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
-                            String telepon = '';
-                            if (isReal && widget.dbSeller?.telepon != null) {
-                              telepon = widget.dbSeller!.telepon!;
-                            } else {
-                              telepon = '81234567890';
-                            }
+                            String telepon = widget.seller.telepon ?? '81234567890';
                             // Clean up phone number (remove leading 0 if present)
                             if (telepon.startsWith('0')) {
                               telepon = telepon.substring(1);
@@ -341,7 +319,7 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                             color: AppColors.accent,
                           ),
                         )
-                      else if (_dbProducts.isEmpty && _dummyProducts.isEmpty)
+                      else if (_dbProducts.isEmpty)
                         Center(
                           child: Padding(
                             padding: const EdgeInsets.symmetric(vertical: 32.0),
@@ -356,32 +334,16 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                           shrinkWrap: true,
                           physics: const NeverScrollableScrollPhysics(),
                           padding: EdgeInsets.zero,
-                          itemCount: isReal
-                              ? _dbProducts.length
-                              : _dummyProducts.length,
+                          itemCount: _dbProducts.length,
                           itemBuilder: (context, index) {
-                            String pName;
-                            double pPrice;
-                            String pImage;
-                            bool pIsLocal;
-                            bool pTersedia = true;
-
-                            if (isReal) {
-                              final p = _dbProducts[index];
-                              pName = p.namaProduk;
-                              pPrice = p.harga;
-                              pImage = p.imagePath;
-                              pIsLocal =
-                                  pImage.isNotEmpty &&
-                                  !pImage.startsWith('assets/');
-                              pTersedia = p.isTersedia;
-                            } else {
-                              final p = _dummyProducts[index];
-                              pName = p.name;
-                              pPrice = p.price.toDouble();
-                              pImage = p.imagePath;
-                              pIsLocal = false;
-                            }
+                            final p = _dbProducts[index];
+                            final String pName = p.namaProduk;
+                            final double pPrice = p.harga;
+                            final String pImage = p.imagePath;
+                            final bool pIsLocal =
+                                pImage.isNotEmpty &&
+                                !pImage.startsWith('assets/');
+                            final bool pTersedia = p.isTersedia;
 
                             final formatCurrency = NumberFormat.currency(
                               locale: 'id_ID',
@@ -396,12 +358,7 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                   MaterialPageRoute(
                                     builder: (context) =>
                                         BuyerProductDetailScreen(
-                                          dbProduct: isReal
-                                              ? _dbProducts[index]
-                                              : null,
-                                          dummyProduct: !isReal
-                                              ? _dummyProducts[index]
-                                              : null,
+                                          product: p,
                                         ),
                                   ),
                                 );

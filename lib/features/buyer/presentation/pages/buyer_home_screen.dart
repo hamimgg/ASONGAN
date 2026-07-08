@@ -1,12 +1,12 @@
 import 'dart:io';
 
 import 'package:asongan_app/core/theme/app_colors.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
+import 'package:asongan_app/core/services/firebase_product_service.dart';
+import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_product_detail_screen.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
-import 'package:asongan_app/features/seller/model/product_model_sql.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -20,8 +20,8 @@ class BuyerHomeScreen extends StatefulWidget {
 }
 
 class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
-  List<ProductModelSql> _dbProducts = [];
-  List<UserModelSql> _dbSellers = [];
+  List<ProductModelFirebase> _dbProducts = [];
+  List<UserModelFirebase> _dbSellers = [];
   bool _isLoadingData = true;
 
   @override
@@ -31,8 +31,8 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
   }
 
   Future<void> _loadData() async {
-    final products = await DBHelper().getAllProducts();
-    final sellers = await DBHelper().getAllPedagang();
+    final products = await FirebaseProductService().getAllProducts();
+    final sellers = await FirebaseAuthService().getAllPedagang();
     setState(() {
       _dbProducts = products;
       _dbSellers = sellers;
@@ -116,14 +116,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
             ),
           ),
           const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: iconColor,
-              size: 22,
-            ),
-          ),
+
           IconButton(
             onPressed: () => Scaffold.of(context).openEndDrawer(),
             icon: Icon(Icons.menu_rounded, color: iconColor, size: 22),
@@ -238,7 +231,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       );
     }
 
-    final totalCount = _dbSellers.length + dummyNearbySellers.length;
+    final totalCount = _dbSellers.length;
 
     return SizedBox(
       height: 200,
@@ -247,31 +240,14 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
         scrollDirection: Axis.horizontal,
         itemCount: totalCount,
         itemBuilder: (context, index) {
-          String name;
-          bool isSelling;
-          String distance;
-          double rating;
-
-          String? fotoToko;
-
-          if (index < _dbSellers.length) {
-            final seller = _dbSellers[index];
-            name = seller.namaToko ?? seller.nama ?? 'Pedagang';
-            isSelling = seller.statusJualan == true;
-            distance = seller.lokasi != null && seller.lokasi!.isNotEmpty
-                ? seller.lokasi!
-                : "Tidak ada lokasi";
-            rating = 4.8; // Dummy value
-            fotoToko = seller.fotoToko;
-          } else {
-            final dummyIndex = index - _dbSellers.length;
-            final seller = dummyNearbySellers[dummyIndex];
-            name = seller.name;
-            isSelling = seller.isSelling;
-            distance = seller.distance;
-            rating = seller.rating;
-            fotoToko = seller.imagePath;
-          }
+          final seller = _dbSellers[index];
+          final String name = seller.namaToko ?? seller.nama ?? 'Pedagang';
+          final bool isSelling = seller.statusJualan == true;
+          final String distance = seller.lokasi != null && seller.lokasi!.isNotEmpty
+              ? seller.lokasi!
+              : "Tidak ada lokasi";
+          final double rating = 4.8;
+          final String? fotoToko = seller.fotoToko;
 
           return GestureDetector(
             onTap: () {
@@ -279,12 +255,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => BuyerStoreDetailScreen(
-                    dbSeller: (index < _dbSellers.length)
-                        ? _dbSellers[index]
-                        : null,
-                    dummySeller: (index >= _dbSellers.length)
-                        ? dummyNearbySellers[index - _dbSellers.length]
-                        : null,
+                    seller: seller,
                   ),
                 ),
               );
@@ -474,7 +445,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       );
     }
 
-    final totalCount = _dbProducts.length + dummyRecommendedProducts.length;
+    final totalCount = _dbProducts.length;
 
     return GridView.builder(
       padding: const EdgeInsets.symmetric(horizontal: 16),
@@ -488,29 +459,13 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
       ),
       itemCount: totalCount,
       itemBuilder: (context, index) {
-        String name;
-        double price;
-        bool isTersedia;
-        String imagePath;
-        bool isLocalImage;
-
-        if (index < _dbProducts.length) {
-          final product = _dbProducts[index];
-          name = product.namaProduk;
-          price = product.harga;
-          isTersedia = product.isTersedia;
-          imagePath = product.imagePath;
-          isLocalImage =
-              imagePath.isNotEmpty && !imagePath.startsWith('assets/');
-        } else {
-          final dummyIndex = index - _dbProducts.length;
-          final product = dummyRecommendedProducts[dummyIndex];
-          name = product.name;
-          price = product.price.toDouble();
-          isTersedia = true; // Dummy products are always available
-          imagePath = product.imagePath; // Fallback dummy image
-          isLocalImage = false;
-        }
+        final product = _dbProducts[index];
+        final String name = product.namaProduk;
+        final double price = product.harga;
+        final bool isTersedia = product.isTersedia;
+        final String imagePath = product.imagePath;
+        final bool isLocalImage =
+            imagePath.isNotEmpty && !imagePath.startsWith('assets/');
 
         return GestureDetector(
           onTap: () {
@@ -518,12 +473,7 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
               context,
               MaterialPageRoute(
                 builder: (context) => BuyerProductDetailScreen(
-                  dbProduct: (index < _dbProducts.length)
-                      ? _dbProducts[index]
-                      : null,
-                  dummyProduct: (index >= _dbProducts.length)
-                      ? dummyRecommendedProducts[index - _dbProducts.length]
-                      : null,
+                  product: product,
                 ),
               ),
             );

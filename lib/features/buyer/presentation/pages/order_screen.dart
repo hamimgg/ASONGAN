@@ -1,8 +1,8 @@
 import 'dart:io';
 import 'package:asongan_app/core/theme/app_colors.dart';
-import 'package:asongan_app/features/auth/data/db_helper.dart';
-import 'package:asongan_app/features/auth/model/user_model_sql.dart';
-import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
+import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
+import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
+import 'package:asongan_app/core/services/firebase_product_service.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -16,8 +16,8 @@ class OrderScreen extends StatefulWidget {
 }
 
 class _OrderScreenState extends State<OrderScreen> {
-  List<UserModelSql> _pedagangList = [];
-  Map<int, int> _totalStokMap = {};
+  List<UserModelFirebase> _pedagangList = [];
+  Map<String, int> _totalStokMap = {};
   bool _isLoading = true;
 
   @override
@@ -27,11 +27,11 @@ class _OrderScreenState extends State<OrderScreen> {
   }
 
   Future<void> _loadData() async {
-    final list = await DBHelper().getAllPedagang();
-    final Map<int, int> stokMap = {};
+    final list = await FirebaseAuthService().getAllPedagang();
+    final Map<String, int> stokMap = {};
     for (final p in list) {
       if (p.id != null) {
-        final products = await DBHelper().getProductsByPedagang(p.id!);
+        final products = await FirebaseProductService().getProductsByPedagang(p.id!);
         int totalStok = 0;
         for (final prod in products) {
           totalStok += prod.stok;
@@ -106,14 +106,7 @@ class _OrderScreenState extends State<OrderScreen> {
             ),
           ),
           const Spacer(),
-          IconButton(
-            onPressed: () {},
-            icon: Icon(
-              Icons.notifications_none_rounded,
-              color: iconColor,
-              size: 22,
-            ),
-          ),
+
           IconButton(
             onPressed: () => Scaffold.of(context).openEndDrawer(),
             icon: Icon(Icons.menu_rounded, color: iconColor, size: 22),
@@ -133,7 +126,7 @@ class _OrderScreenState extends State<OrderScreen> {
         ? const Color(0xFF9A9A9A)
         : const Color(0xFF7A7A7C);
 
-    final totalCount = _pedagangList.length + dummyNearbySellers.length;
+    final totalCount = _pedagangList.length;
 
     if (totalCount == 0) {
       return Center(
@@ -159,38 +152,14 @@ class _OrderScreenState extends State<OrderScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
       itemCount: totalCount,
       itemBuilder: (context, index) {
-        final bool isReal = index < _pedagangList.length;
-
-        String name;
-        bool isBerjualan;
-        String? fotoToko;
-        String jamOperasional;
-        String lokasi;
-        String jenisProduk;
-        int totalStok;
-
-        if (isReal) {
-          final pedagang = _pedagangList[index];
-          name = pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan';
-          isBerjualan = pedagang.statusJualan ?? true;
-          fotoToko = pedagang.fotoToko;
-          jamOperasional = pedagang.jamOperasional == null || pedagang.jamOperasional!.isEmpty ? 'Tidak ditentukan' : pedagang.jamOperasional!;
-          lokasi = pedagang.lokasi ?? '';
-          jenisProduk = pedagang.namaMakanan ?? pedagang.jenisProduk ?? 'Makanan & Minuman';
-          totalStok = _totalStokMap[pedagang.id] ?? 0;
-        } else {
-          final dummyIndex = index - _pedagangList.length;
-          final seller = dummyNearbySellers[dummyIndex];
-          name = seller.name;
-          isBerjualan = seller.isSelling;
-          fotoToko = seller.imagePath;
-          jamOperasional = "08:00 - 17:00";
-          lokasi = seller.distance;
-          jenisProduk = seller.name.toLowerCase().contains("siomay")
-              ? "Siomay & Batagor"
-              : (seller.name.toLowerCase().contains("sate") ? "Sate Padang" : "Makanan & Minuman");
-          totalStok = 15;
-        }
+        final pedagang = _pedagangList[index];
+        final String name = pedagang.namaToko ?? pedagang.nama ?? 'Toko Asongan';
+        final bool isBerjualan = pedagang.statusJualan ?? true;
+        final String? fotoToko = pedagang.fotoToko;
+        final String jamOperasional = pedagang.jamOperasional == null || pedagang.jamOperasional!.isEmpty ? 'Tidak ditentukan' : pedagang.jamOperasional!;
+        final String lokasi = pedagang.lokasi ?? '';
+        final String jenisProduk = pedagang.namaMakanan ?? pedagang.jenisProduk ?? 'Makanan & Minuman';
+        final int totalStok = _totalStokMap[pedagang.id] ?? 0;
 
         return Card(
           color: cardBg,
@@ -206,10 +175,7 @@ class _OrderScreenState extends State<OrderScreen> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => BuyerStoreDetailScreen(
-                    dbSeller: isReal ? _pedagangList[index] : null,
-                    dummySeller: !isReal
-                        ? dummyNearbySellers[index - _pedagangList.length]
-                        : null,
+                    seller: pedagang,
                   ),
                 ),
               );

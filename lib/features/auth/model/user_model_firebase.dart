@@ -47,6 +47,9 @@ class UserModelFirebase {
   
   final String? lokasi;
 
+  @JsonKey(name: 'foto_toko')
+  final String? fotoToko;
+
   UserModelFirebase({
     this.id,
     required this.email,
@@ -60,6 +63,7 @@ class UserModelFirebase {
     this.statusJualan,
     this.jamOperasional,
     this.lokasi,
+    this.fotoToko,
   });
 
   factory UserModelFirebase.fromJson(Map<String, dynamic> json) =>
@@ -86,6 +90,7 @@ class UserModelFirebase {
       statusJualan: sqlModel.statusJualan,
       jamOperasional: sqlModel.jamOperasional,
       lokasi: sqlModel.lokasi,
+      fotoToko: sqlModel.fotoToko,
     );
   }
 
@@ -103,6 +108,7 @@ class UserModelFirebase {
       statusJualan: statusJualan,
       jamOperasional: jamOperasional,
       lokasi: lokasi,
+      fotoToko: fotoToko,
     );
   }
 }
