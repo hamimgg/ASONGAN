@@ -2,6 +2,7 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
+import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
 
 class FirebaseAuthService {
   static final FirebaseAuthService _instance = FirebaseAuthService._internal();
@@ -19,6 +20,22 @@ class FirebaseAuthService {
       if (doc.exists && doc.data() != null) {
         return UserModelFirebase.fromMap(doc.data() as Map<String, dynamic>);
       }
+      // Jika tidak ketemu di Firestore, cari di dummy
+      final dummyIndex = dummyNearbySellers.indexWhere((s) => s.id == id);
+      if (dummyIndex != -1) {
+        final s = dummyNearbySellers[dummyIndex];
+        return UserModelFirebase(
+          id: s.id,
+          nama: s.name,
+          namaToko: s.name,
+          role: 'pedagang',
+          lokasi: s.distance,
+          statusJualan: s.isSelling,
+          fotoToko: s.imagePath,
+          email: '',
+          password: '',
+        );
+      }
       return null;
     });
   }
@@ -27,13 +44,36 @@ class FirebaseAuthService {
   // Filter dilakukan di sisi klien agar tidak butuh composite index Firestore.
   Stream<List<UserModelFirebase>> streamAllPedagang() {
     return _firestore.collection('users').snapshots().map((snapshot) {
-      return snapshot.docs
+      final List<UserModelFirebase> list = snapshot.docs
           .map((doc) => UserModelFirebase.fromMap(doc.data()))
           .where((user) =>
               user.role == 'pedagang' ||
               user.role == 'pedagang_dan_pembeli' ||
               (user.namaToko != null && user.namaToko!.isNotEmpty))
           .toList();
+
+      // Map dummy data ke UserModelFirebase
+      final List<UserModelFirebase> dummySellersList = dummyNearbySellers.map((s) {
+        return UserModelFirebase(
+          id: s.id,
+          nama: s.name,
+          namaToko: s.name,
+          role: 'pedagang',
+          lokasi: s.distance,
+          statusJualan: s.isSelling,
+          fotoToko: s.imagePath,
+          email: '',
+          password: '',
+        );
+      }).toList();
+
+      for (var dummy in dummySellersList) {
+        if (!list.any((s) => s.id == dummy.id)) {
+          list.add(dummy);
+        }
+      }
+
+      return list;
     });
   }
 
@@ -91,6 +131,9 @@ class FirebaseAuthService {
         // Gabungkan dengan password yang dimasukkan saat login (jika diperlukan untuk model lokal)
         final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
         data['password'] = pengguna.password;
+        if (data['id'] == null) {
+          data['id'] = uid;
+        }
         return UserModelFirebase.fromMap(data);
       }
       return null;
@@ -144,7 +187,27 @@ class FirebaseAuthService {
     try {
       final DocumentSnapshot doc = await _firestore.collection('users').doc(id).get();
       if (doc.exists && doc.data() != null) {
-        return UserModelFirebase.fromMap(doc.data() as Map<String, dynamic>);
+        final Map<String, dynamic> data = doc.data() as Map<String, dynamic>;
+        if (data['id'] == null) {
+          data['id'] = id;
+        }
+        return UserModelFirebase.fromMap(data);
+      }
+      // Jika tidak ketemu di Firestore, cari di dummy
+      final dummyIndex = dummyNearbySellers.indexWhere((s) => s.id == id);
+      if (dummyIndex != -1) {
+        final s = dummyNearbySellers[dummyIndex];
+        return UserModelFirebase(
+          id: s.id,
+          nama: s.name,
+          namaToko: s.name,
+          role: 'pedagang',
+          lokasi: s.distance,
+          statusJualan: s.isSelling,
+          fotoToko: s.imagePath,
+          email: '',
+          password: '',
+        );
       }
       return null;
     } catch (e) {
@@ -168,19 +231,62 @@ class FirebaseAuthService {
           )
           .get();
 
-      return querySnapshot.docs.map((doc) {
+      final List<UserModelFirebase> list = querySnapshot.docs.map((doc) {
         return UserModelFirebase.fromMap(doc.data() as Map<String, dynamic>);
       }).toList();
+
+      final List<UserModelFirebase> dummySellersList = dummyNearbySellers.map((s) {
+        return UserModelFirebase(
+          id: s.id,
+          nama: s.name,
+          namaToko: s.name,
+          role: 'pedagang',
+          lokasi: s.distance,
+          statusJualan: s.isSelling,
+          fotoToko: s.imagePath,
+          email: '',
+          password: '',
+        );
+      }).toList();
+
+      for (var dummy in dummySellersList) {
+        if (!list.any((s) => s.id == dummy.id)) {
+          list.add(dummy);
+        }
+      }
+
+      return list;
     } catch (e) {
       log('Error getting all pedagang with Filter.or, falling back to local filtering: ${e.toString()}');
-      // Fallback: Ambil semua user lalu filter secara lokal jika query Filter.or gagal atau tidak didukung
       try {
         final List<UserModelFirebase> allUsers = await getAllUsers();
-        return allUsers.where((user) {
+        final List<UserModelFirebase> list = allUsers.where((user) {
           return user.role == 'pedagang' ||
               user.role == 'pedagang_dan_pembeli' ||
               (user.namaToko != null && user.namaToko!.isNotEmpty);
         }).toList();
+
+        final List<UserModelFirebase> dummySellersList = dummyNearbySellers.map((s) {
+          return UserModelFirebase(
+            id: s.id,
+            nama: s.name,
+            namaToko: s.name,
+            role: 'pedagang',
+            lokasi: s.distance,
+            statusJualan: s.isSelling,
+            fotoToko: s.imagePath,
+            email: '',
+            password: '',
+          );
+        }).toList();
+
+        for (var dummy in dummySellersList) {
+          if (!list.any((s) => s.id == dummy.id)) {
+            list.add(dummy);
+          }
+        }
+
+        return list;
       } catch (err) {
         log('Fallback failed: ${err.toString()}');
         return [];

@@ -72,11 +72,24 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
 
   Future<void> _save() async {
     if (_formKey.currentState!.validate()) {
+      // Tampilkan loading dialog
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (context) => const Center(
+          child: CircularProgressIndicator(color: Color(0xFFF5A623)),
+        ),
+      );
+
+      // Bersihkan karakter non-numerik dari harga (misalnya titik/koma/Rp) agar pas parsing aman
+      final cleanPriceText = _priceController.text.replaceAll(RegExp(r'[^0-9]'), '');
+      final parsedPrice = double.tryParse(cleanPriceText) ?? 0.0;
+
       final product = ProductModelFirebase(
         id: widget.productToEdit?.id,
         pedagangId: widget.pedagangId,
         namaProduk: _nameController.text,
-        harga: double.tryParse(_priceController.text) ?? 0,
+        harga: parsedPrice,
         deskripsi: _descController.text,
         imagePath: _imageFile != null ? _imageFile!.path : (widget.productToEdit?.imagePath ?? ''),
         stok: int.tryParse(_stokController.text) ?? 0,
@@ -92,13 +105,19 @@ class _ProductFormBottomSheetState extends State<ProductFormBottomSheet> {
         success = await FirebaseProductService().updateProduct(product);
       }
 
+      // Tutup loading dialog
+      if (mounted) Navigator.pop(context);
+
       if (success) {
         widget.onSaved();
         if (mounted) Navigator.pop(context);
       } else {
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('Gagal menyimpan produk')),
+            const SnackBar(
+              content: Text('Gagal menyimpan produk'),
+              backgroundColor: Colors.redAccent,
+            ),
           );
         }
       }

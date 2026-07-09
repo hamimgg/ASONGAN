@@ -189,6 +189,15 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
   Future<void> _saveSettings() async {
     if (_currentUser == null) return;
 
+    // Tampilkan loading dialog
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (context) => const Center(
+        child: CircularProgressIndicator(color: AppColors.accent),
+      ),
+    );
+
     final updatedUser = UserModelFirebase(
       id: _currentUser!.id,
       email: _currentUser!.email,
@@ -207,6 +216,9 @@ class _StoreDetailScreenState extends State<StoreDetailScreen> {
 
     // Simpan pengaturan toko langsung ke Firestore (realtime untuk pembeli)
     final bool success = await FirebaseAuthService().updateUser(updatedUser);
+
+    // Tutup loading dialog
+    if (mounted) Navigator.pop(context);
 
     if (success) {
       await AuthService.saveUserSession(updatedUser);

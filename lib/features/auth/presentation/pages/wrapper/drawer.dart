@@ -32,6 +32,122 @@ class _MainDrawerState extends State<MainDrawer> {
     });
   }
 
+  void _confirmSwitchMode() {
+    final bool isDark = isDarkModeNotifier.value;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final Color subtextColor = isDark ? Colors.white70 : const Color(0xFF7A7A7C);
+    final Color cardBg = isDark ? const Color(0xff1c1c1e) : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: cardBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            "Konfirmasi Ganti Mode",
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          content: Text(
+            "Yakin ingin beralih mode ke ${_activeMode == 'pembeli' ? 'Pedagang' : 'Pembeli'}?",
+            style: TextStyle(
+              color: subtextColor,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Batal",
+                style: TextStyle(
+                  color: subtextColor,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _switchMode();
+              },
+              child: const Text(
+                "Yakin",
+                style: TextStyle(
+                  color: Color(0xFFF5A623),
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _confirmLogout() {
+    final bool isDark = isDarkModeNotifier.value;
+    final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
+    final Color subtextColor = isDark ? Colors.white70 : const Color(0xFF7A7A7C);
+    final Color cardBg = isDark ? const Color(0xff1c1c1e) : Colors.white;
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: cardBg,
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            "Konfirmasi Keluar",
+            style: TextStyle(
+              color: textColor,
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          content: Text(
+            "Apakah Anda yakin ingin keluar dari aplikasi?",
+            style: TextStyle(
+              color: subtextColor,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Batal",
+                style: TextStyle(
+                  color: subtextColor,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _logout();
+              },
+              child: const Text(
+                "Keluar",
+                style: TextStyle(
+                  color: Colors.red,
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _switchMode() async {
     final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
     
@@ -170,14 +286,14 @@ class _MainDrawerState extends State<MainDrawer> {
                 icon: Icons.swap_horiz,
                 label: _activeMode == 'pembeli' ? "Login sebagai pedagang" : "Mode Pembeli",
                 textColor: textColor,
-                onTap: _switchMode,
+                onTap: _confirmSwitchMode,
               ),
               _drawerItem(
                 icon: Icons.logout,
                 label: "Logout",
                 textColor: Colors.red,
                 color: Colors.red,
-                onTap: _logout,
+                onTap: _confirmLogout,
               ),
               const SizedBox(height: 20),
             ],

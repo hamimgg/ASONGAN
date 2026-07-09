@@ -35,19 +35,82 @@ class _ProfileScreenState extends State<ProfileScreen> {
     }
   }
 
+  void _confirmSwitchRole() {
+    final bool isDark = isDarkModeNotifier.value;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: AppColors.cardBg(isDark),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          title: Text(
+            "Konfirmasi Ganti Mode",
+            style: TextStyle(
+              color: AppColors.textPrimary(isDark),
+              fontWeight: FontWeight.bold,
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          content: Text(
+            "Yakin ingin beralih mode ke ${_activeMode == 'pembeli' ? 'Pedagang' : 'Pembeli'}?",
+            style: TextStyle(
+              color: AppColors.textSubtitle(isDark),
+              fontFamily: 'Plus Jakarta Sans',
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                "Batal",
+                style: TextStyle(
+                  color: AppColors.textSubtitle(isDark),
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: () {
+                Navigator.pop(context);
+                _switchRole();
+              },
+              child: const Text(
+                "Yakin",
+                style: TextStyle(
+                  color: Color(0xFFF5A623),
+                  fontWeight: FontWeight.bold,
+                  fontFamily: 'Plus Jakarta Sans',
+                ),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
   Future<void> _switchRole() async {
     final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
 
     // Jika user pindah ke mode pedagang dan belum memiliki role pedagang di database, perbarui role-nya
     if (newMode == 'pedagang' && _user != null) {
       if (_user!.role == 'pembeli') {
+        // Tampilkan loading dialog
+        showDialog(
+          context: context,
+          barrierDismissible: false,
+          builder: (context) => const Center(
+            child: CircularProgressIndicator(color: AppColors.accent),
+          ),
+        );
+
         final updatedUser = UserModelFirebase(
           id: _user!.id,
           email: _user!.email,
           password: _user!.password,
           nama: _user!.nama,
           telepon: _user!.telepon,
-          role: 'pedagang_dan_pembeli',
+          role: 'pedagang',
           namaToko: _user!.namaToko ?? _user!.nama,
           jenisProduk: _user!.jenisProduk,
           namaMakanan: _user!.namaMakanan,
@@ -56,7 +119,24 @@ class _ProfileScreenState extends State<ProfileScreen> {
           lokasi: _user!.lokasi,
           fotoToko: _user!.fotoToko,
         );
-        await FirebaseAuthService().updateUser(updatedUser);
+
+        final success = await FirebaseAuthService().updateUser(updatedUser);
+
+        // Tutup loading dialog
+        if (mounted) Navigator.pop(context);
+
+        if (!success) {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              const SnackBar(
+                content: Text('Gagal memperbarui peran di server. Silakan coba lagi.'),
+                backgroundColor: Colors.redAccent,
+              ),
+            );
+          }
+          return;
+        }
+
         await AuthService.saveUserSession(updatedUser);
         setState(() {
           _user = updatedUser;
@@ -281,7 +361,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       subtitleColor: subtitleColor,
                       cardBg: cardBg,
                       cardBorder: cardBorder,
-                      onTap: _switchRole,
+                      onTap: _confirmSwitchRole,
                     ),
                     const SizedBox(height: 12),
                     _buildActionItem(

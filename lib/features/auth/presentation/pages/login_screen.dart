@@ -155,7 +155,7 @@ class _LoginPageState extends State<LoginPage>
                               ),
                               const SizedBox(height: 6),
                               Text(
-                                'Masuk untuk mulai menemukan pedagang terdekat',
+                                'Masuk untuk memulai menemukan ${pembeli ? "pedagang" : "pembeli"} terdekat',
                                 style: TextStyle(
                                   color: subtitleColor,
                                   fontSize: 13,
