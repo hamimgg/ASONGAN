@@ -228,27 +228,6 @@ class _LoginPageState extends State<LoginPage>
                                 ),
                               ),
 
-                              // Lupa kata sandi
-                              Align(
-                                alignment: Alignment.centerRight,
-                                child: TextButton(
-                                  onPressed: () {},
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.only(top: 4),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize:
-                                        MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                  child: const Text(
-                                    'Lupa kata sandi?',
-                                    style: TextStyle(
-                                      color: Color(0xFFF5A623),
-                                      fontSize: 12,
-                                      fontFamily: 'Plus Jakarta Sans',
-                                    ),
-                                  ),
-                                ),
-                              ),
                               const SizedBox(height: 16),
 
                               // Masuk button

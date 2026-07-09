@@ -7,6 +7,7 @@ import 'package:asongan_app/core/services/firebase_product_service.dart';
 import 'package:asongan_app/features/seller/model/product_model_firebase.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_product_detail_screen.dart';
 import 'package:asongan_app/features/buyer/presentation/pages/buyer_store_detail_screen.dart';
+import 'package:asongan_app/features/buyer/model/buyer_dummy_data.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
@@ -205,6 +206,25 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
     return StreamBuilder<List<UserModelFirebase>>(
       stream: FirebaseAuthService().streamAllPedagang(),
       builder: (context, snapshot) {
+        if (snapshot.hasError) {
+          debugPrint("Error loading nearby sellers from Firestore: ${snapshot.error}");
+          // Fallback ke dummy data agar halaman tidak kosong saat terjadi error rules/permission
+          final dummySellersList = dummyNearbySellers.map((s) {
+            return UserModelFirebase(
+              id: s.id,
+              nama: s.name,
+              namaToko: s.name,
+              role: 'pedagang',
+              lokasi: s.distance,
+              statusJualan: s.isSelling,
+              fotoToko: s.imagePath,
+              email: '',
+              password: '',
+            );
+          }).toList();
+          return _buildSellersListView(isDark, dummySellersList);
+        }
+
         if (snapshot.connectionState == ConnectionState.waiting &&
             !snapshot.hasData) {
           return const SizedBox(
@@ -216,16 +236,20 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
         }
 
         final sellers = snapshot.data ?? [];
-        final totalCount = sellers.length;
+        return _buildSellersListView(isDark, sellers);
+      },
+    );
+  }
 
-        return SizedBox(
-          height: 200,
-          child: ListView.builder(
-            padding: const EdgeInsets.symmetric(horizontal: 16),
-            scrollDirection: Axis.horizontal,
-            itemCount: totalCount,
-            itemBuilder: (context, index) {
-              final seller = sellers[index];
+  Widget _buildSellersListView(bool isDark, List<UserModelFirebase> sellers) {
+    return SizedBox(
+      height: 200,
+      child: ListView.builder(
+        padding: const EdgeInsets.symmetric(horizontal: 16),
+        scrollDirection: Axis.horizontal,
+        itemCount: sellers.length,
+        itemBuilder: (context, index) {
+          final seller = sellers[index];
           final String name = seller.namaToko ?? seller.nama ?? 'Pedagang';
           final bool isSelling = seller.statusJualan == true;
           final String distance = seller.lokasi != null && seller.lokasi!.isNotEmpty
@@ -391,12 +415,16 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                                 size: 12,
                               ),
                               const SizedBox(width: 4),
-                              Text(
-                                distance,
-                                style: TextStyle(
-                                  color: AppColors.textSubtitle(isDark),
-                                  fontSize: 11,
-                                  fontFamily: 'Plus Jakarta Sans',
+                              Expanded(
+                                child: Text(
+                                  distance,
+                                  style: TextStyle(
+                                    color: AppColors.textSubtitle(isDark),
+                                    fontSize: 11,
+                                    fontFamily: 'Plus Jakarta Sans',
+                                  ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
                               ),
                             ],
@@ -408,11 +436,9 @@ class _BuyerHomeScreenState extends State<BuyerHomeScreen> {
                 ],
               ),
             ),
-              );
-            },
-          ),
-        );
-      },
+          );
+        },
+      ),
     );
   }
 

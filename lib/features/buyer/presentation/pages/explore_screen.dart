@@ -24,6 +24,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   int _selectedFilter = 0;
   final List<String> _filters = ['Semua', 'Terdekat', 'Makanan', 'Minuman'];
   final PanelController _panelController = PanelController();
+  final TextEditingController _searchController = TextEditingController();
   List<UserModelFirebase> _pedagangList = [];
   bool _isLoading = true;
   StreamSubscription<List<UserModelFirebase>>? _pedagangSubscription;
@@ -44,6 +45,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
   @override
   void dispose() {
     _pedagangSubscription?.cancel();
+    _searchController.dispose();
     isDarkModeNotifier.removeListener(_onThemeChanged);
     super.dispose();
   }
@@ -81,6 +83,32 @@ class _ExploreScreenState extends State<ExploreScreen> {
     );
   }
 
+  List<UserModelFirebase> _getFilteredPedagang() {
+    final query = _searchController.text.toLowerCase();
+    return _pedagangList.where((p) {
+      final type = p.jenisProduk ?? '';
+      final isActive = p.statusJualan == true;
+
+      // Filter by chip
+      if (_selectedFilter == 1 && !isActive) return false;
+      if (_selectedFilter == 2 &&
+          !type.toLowerCase().contains('makanan') &&
+          !type.toLowerCase().contains('berat')) return false;
+      if (_selectedFilter == 3 &&
+          !type.toLowerCase().contains('minuman')) return false;
+
+      // Filter by search query
+      final name = (p.namaToko ?? p.nama ?? '').toLowerCase();
+      final foodName = (p.namaMakanan ?? '').toLowerCase();
+      final matchesSearch = query.isEmpty ||
+          name.contains(query) ||
+          type.toLowerCase().contains(query) ||
+          foodName.contains(query);
+
+      return matchesSearch;
+    }).toList();
+  }
+
   void _updateMarkers(bool isDark) {
     final newMarkers = <Marker>{};
 
@@ -98,17 +126,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
       );
     }
 
-    for (var p in _pedagangList) {
+    final filtered = _getFilteredPedagang();
+    for (var p in filtered) {
       final isActive = p.statusJualan == true;
-      final type = p.jenisProduk ?? '';
-
-      if (_selectedFilter == 1 && !isActive) continue; // Terdekat / Aktif
-      if (_selectedFilter == 2 &&
-          !type.toLowerCase().contains('makanan') &&
-          !type.toLowerCase().contains('berat')) continue;
-      if (_selectedFilter == 3 &&
-          !type.toLowerCase().contains('minuman')) continue;
-
       final sellerLoc = _getSellerLocation(p);
 
       newMarkers.add(
@@ -407,6 +427,11 @@ class _ExploreScreenState extends State<ExploreScreen> {
             const SizedBox(width: 8),
             Expanded(
               child: TextField(
+                controller: _searchController,
+                onChanged: (value) {
+                  setState(() {});
+                  _updateMarkers(isDarkModeNotifier.value);
+                },
                 style: TextStyle(
                   color: textColor,
                   fontSize: 14,
@@ -600,7 +625,9 @@ class _ExploreScreenState extends State<ExploreScreen> {
         : const Color(0xFFE2E8F0);
     final Color headerColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
 
-    final totalActiveCount = _pedagangList.where((p) => p.statusJualan == true).length;
+    final filteredList = _getFilteredPedagang();
+    final activeFiltered = filteredList.where((p) => p.statusJualan == true).toList();
+    final totalActiveCount = activeFiltered.length;
 
     return Container(
       decoration: BoxDecoration(
@@ -676,8 +703,7 @@ class _ExploreScreenState extends State<ExploreScreen> {
                     scrollDirection: Axis.horizontal,
                     padding: const EdgeInsets.symmetric(horizontal: 16),
                     children: [
-                      ..._pedagangList
-                          .where((p) => p.statusJualan == true)
+                      ...activeFiltered
                           .map((p) {
                             return Padding(
                               padding: const EdgeInsets.only(right: 12),

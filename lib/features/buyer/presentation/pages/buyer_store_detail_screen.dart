@@ -144,7 +144,10 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                       ),
                                     ),
                                     const SizedBox(height: 8),
-                                    Row(
+                                    Wrap(
+                                      spacing: 12,
+                                      runSpacing: 8,
+                                      crossAxisAlignment: WrapCrossAlignment.center,
                                       children: [
                                         Container(
                                           padding: const EdgeInsets.symmetric(
@@ -173,34 +176,42 @@ class _BuyerStoreDetailScreenState extends State<BuyerStoreDetailScreen> {
                                             ),
                                           ),
                                         ),
-                                        const SizedBox(width: 12),
-                                        Icon(
-                                          Icons.star_rounded,
-                                          color: AppColors.accent,
-                                          size: 16,
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.star_rounded,
+                                              color: AppColors.accent,
+                                              size: 16,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              rating.toString(),
+                                              style: TextStyle(
+                                                color: textColor,
+                                                fontWeight: FontWeight.bold,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
                                         ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          rating.toString(),
-                                          style: TextStyle(
-                                            color: textColor,
-                                            fontWeight: FontWeight.bold,
-                                            fontSize: 13,
-                                          ),
-                                        ),
-                                        const SizedBox(width: 12),
-                                        Icon(
-                                          Icons.access_time_rounded,
-                                          color: subtitleColor,
-                                          size: 14,
-                                        ),
-                                        const SizedBox(width: 4),
-                                        Text(
-                                          "Sejak $since",
-                                          style: TextStyle(
-                                            color: subtitleColor,
-                                            fontSize: 13,
-                                          ),
+                                        Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            Icon(
+                                              Icons.access_time_rounded,
+                                              color: subtitleColor,
+                                              size: 14,
+                                            ),
+                                            const SizedBox(width: 4),
+                                            Text(
+                                              "Sejak $since",
+                                              style: TextStyle(
+                                                color: subtitleColor,
+                                                fontSize: 13,
+                                              ),
+                                            ),
+                                          ],
                                         ),
                                       ],
                                     ),

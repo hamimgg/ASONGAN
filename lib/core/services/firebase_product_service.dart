@@ -124,21 +124,9 @@ class FirebaseProductService {
           .collection('products')
           .where('pedagang_id', isEqualTo: pedagangId)
           .get();
-      final List<ProductModelFirebase> list = querySnapshot.docs.map((doc) {
+      return querySnapshot.docs.map((doc) {
         return ProductModelFirebase.fromMap(doc.data() as Map<String, dynamic>, docId: doc.id);
       }).toList();
-
-      final List<ProductModelFirebase> dummyProds = _getDummyProducts()
-          .where((p) => p.pedagangId == pedagangId)
-          .toList();
-
-      for (var dummy in dummyProds) {
-        if (!list.any((p) => p.id == dummy.id)) {
-          list.add(dummy);
-        }
-      }
-
-      return list;
     } catch (e) {
       print('Error getting products by pedagang: $e');
       return [];
@@ -146,7 +134,7 @@ class FirebaseProductService {
   }
 
   // Add a product
-  Future<bool> addProduct(ProductModelFirebase product) async {
+  Future<String?> addProduct(ProductModelFirebase product) async {
     try {
       final docRef = _firestore.collection('products').doc();
       final productWithId = ProductModelFirebase(
@@ -162,22 +150,22 @@ class FirebaseProductService {
         variasi: product.variasi,
       );
       await docRef.set(productWithId.toMap());
-      return true;
+      return null;
     } catch (e) {
       print('Error adding product: $e');
-      return false;
+      return e.toString();
     }
   }
 
   // Update a product
-  Future<bool> updateProduct(ProductModelFirebase product) async {
-    if (product.id == null) return false;
+  Future<String?> updateProduct(ProductModelFirebase product) async {
+    if (product.id == null) return 'Product ID is null';
     try {
       await _firestore.collection('products').doc(product.id).update(product.toMap());
-      return true;
+      return null;
     } catch (e) {
       print('Error updating product: $e');
-      return false;
+      return e.toString();
     }
   }
 

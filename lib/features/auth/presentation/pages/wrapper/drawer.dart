@@ -1,7 +1,6 @@
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
 import 'package:asongan_app/features/auth/presentation/pages/login_screen.dart';
-import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -15,7 +14,6 @@ class MainDrawer extends StatefulWidget {
 
 class _MainDrawerState extends State<MainDrawer> {
   UserModelFirebase? _currentUser;
-  String _activeMode = 'pembeli';
 
   @override
   void initState() {
@@ -25,70 +23,12 @@ class _MainDrawerState extends State<MainDrawer> {
 
   Future<void> _loadUser() async {
     final user = await AuthService.getUserSession();
-    final mode = await AuthService.getActiveMode();
     setState(() {
       _currentUser = user;
-      _activeMode = mode ?? 'pembeli';
     });
   }
 
-  void _confirmSwitchMode() {
-    final bool isDark = isDarkModeNotifier.value;
-    final Color textColor = isDark ? Colors.white : const Color(0xFF1C1C1E);
-    final Color subtextColor = isDark ? Colors.white70 : const Color(0xFF7A7A7C);
-    final Color cardBg = isDark ? const Color(0xff1c1c1e) : Colors.white;
 
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: cardBg,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            "Konfirmasi Ganti Mode",
-            style: TextStyle(
-              color: textColor,
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-          content: Text(
-            "Yakin ingin beralih mode ke ${_activeMode == 'pembeli' ? 'Pedagang' : 'Pembeli'}?",
-            style: TextStyle(
-              color: subtextColor,
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Batal",
-                style: TextStyle(
-                  color: subtextColor,
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _switchMode();
-              },
-              child: const Text(
-                "Yakin",
-                style: TextStyle(
-                  color: Color(0xFFF5A623),
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
   void _confirmLogout() {
     final bool isDark = isDarkModeNotifier.value;
@@ -148,33 +88,7 @@ class _MainDrawerState extends State<MainDrawer> {
     );
   }
 
-  Future<void> _switchMode() async {
-    final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
-    
-    // Jika belum login, ke halaman login
-    if (_currentUser == null) {
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (_) => const LoginPage()),
-      );
-      return;
-    }
 
-    // Jika sudah login tapi role-nya pembeli dan mau ke pedagang, tolak
-    if (newMode == 'pedagang' && _currentUser!.role == 'pembeli') {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Akun Anda bukan akun pedagang!')),
-      );
-      return;
-    }
-
-    await AuthService.setActiveMode(newMode);
-    if (!mounted) return;
-    Navigator.pushReplacement(
-      context,
-      MaterialPageRoute(builder: (_) => const MainWrapper()),
-    );
-  }
 
   Future<void> _logout() async {
     await AuthService.clearSession();
@@ -282,12 +196,6 @@ class _MainDrawerState extends State<MainDrawer> {
                 ),
               ),
               const Spacer(),
-              _drawerItem(
-                icon: Icons.swap_horiz,
-                label: _activeMode == 'pembeli' ? "Login sebagai pedagang" : "Mode Pembeli",
-                textColor: textColor,
-                onTap: _confirmSwitchMode,
-              ),
               _drawerItem(
                 icon: Icons.logout,
                 label: "Logout",

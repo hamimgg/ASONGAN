@@ -2,7 +2,6 @@ import 'package:asongan_app/core/theme/app_colors.dart';
 import 'package:asongan_app/features/auth/data/auth_service.dart';
 import 'package:asongan_app/features/auth/data/firebase_auth_service.dart';
 import 'package:asongan_app/features/auth/model/user_model_firebase.dart';
-import 'package:asongan_app/features/auth/presentation/pages/wrapper/main_wrapper.dart';
 import 'package:asongan_app/features/settings/settings_screen.dart';
 import 'package:asongan_app/main.dart';
 import 'package:flutter/material.dart';
@@ -16,7 +15,6 @@ class ProfileScreen extends StatefulWidget {
 
 class _ProfileScreenState extends State<ProfileScreen> {
   UserModelFirebase? _user;
-  String _activeMode = 'pembeli';
 
   @override
   void initState() {
@@ -26,134 +24,14 @@ class _ProfileScreenState extends State<ProfileScreen> {
 
   Future<void> _loadUserData() async {
     final user = await AuthService.getUserSession();
-    final mode = await AuthService.getActiveMode();
     if (mounted) {
       setState(() {
         _user = user;
-        _activeMode = mode ?? 'pembeli';
       });
     }
   }
 
-  void _confirmSwitchRole() {
-    final bool isDark = isDarkModeNotifier.value;
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: AppColors.cardBg(isDark),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-          title: Text(
-            "Konfirmasi Ganti Mode",
-            style: TextStyle(
-              color: AppColors.textPrimary(isDark),
-              fontWeight: FontWeight.bold,
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-          content: Text(
-            "Yakin ingin beralih mode ke ${_activeMode == 'pembeli' ? 'Pedagang' : 'Pembeli'}?",
-            style: TextStyle(
-              color: AppColors.textSubtitle(isDark),
-              fontFamily: 'Plus Jakarta Sans',
-            ),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text(
-                "Batal",
-                style: TextStyle(
-                  color: AppColors.textSubtitle(isDark),
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
-            ),
-            TextButton(
-              onPressed: () {
-                Navigator.pop(context);
-                _switchRole();
-              },
-              child: const Text(
-                "Yakin",
-                style: TextStyle(
-                  color: Color(0xFFF5A623),
-                  fontWeight: FontWeight.bold,
-                  fontFamily: 'Plus Jakarta Sans',
-                ),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
 
-  Future<void> _switchRole() async {
-    final newMode = _activeMode == 'pembeli' ? 'pedagang' : 'pembeli';
-
-    // Jika user pindah ke mode pedagang dan belum memiliki role pedagang di database, perbarui role-nya
-    if (newMode == 'pedagang' && _user != null) {
-      if (_user!.role == 'pembeli') {
-        // Tampilkan loading dialog
-        showDialog(
-          context: context,
-          barrierDismissible: false,
-          builder: (context) => const Center(
-            child: CircularProgressIndicator(color: AppColors.accent),
-          ),
-        );
-
-        final updatedUser = UserModelFirebase(
-          id: _user!.id,
-          email: _user!.email,
-          password: _user!.password,
-          nama: _user!.nama,
-          telepon: _user!.telepon,
-          role: 'pedagang',
-          namaToko: _user!.namaToko ?? _user!.nama,
-          jenisProduk: _user!.jenisProduk,
-          namaMakanan: _user!.namaMakanan,
-          statusJualan: _user!.statusJualan,
-          jamOperasional: _user!.jamOperasional,
-          lokasi: _user!.lokasi,
-          fotoToko: _user!.fotoToko,
-        );
-
-        final success = await FirebaseAuthService().updateUser(updatedUser);
-
-        // Tutup loading dialog
-        if (mounted) Navigator.pop(context);
-
-        if (!success) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(
-                content: Text('Gagal memperbarui peran di server. Silakan coba lagi.'),
-                backgroundColor: Colors.redAccent,
-              ),
-            );
-          }
-          return;
-        }
-
-        await AuthService.saveUserSession(updatedUser);
-        setState(() {
-          _user = updatedUser;
-        });
-      }
-    }
-
-    await AuthService.setActiveMode(newMode);
-
-    if (mounted) {
-      // Navigate to MainWrapper which will reload based on new active mode
-      Navigator.pushReplacement(
-        context,
-        MaterialPageRoute(builder: (context) => const MainWrapper()),
-      );
-    }
-  }
 
   Future<void> _showEditProfileDialog(UserModelFirebase? user) async {
     final Color scaffoldBg = AppColors.scaffoldBg(isDarkModeNotifier.value);
@@ -325,7 +203,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
                               borderRadius: BorderRadius.circular(20),
                             ),
                             child: Text(
-                              "Mode: ${_activeMode.toUpperCase()}",
+                              "Role: ${(user?.role ?? 'pembeli').toUpperCase()}",
                               style: TextStyle(
                                 color: textColor,
                                 fontSize: 12,
@@ -350,18 +228,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       cardBg: cardBg,
                       cardBorder: cardBorder,
                       onTap: () => _showEditProfileDialog(user),
-                    ),
-                    const SizedBox(height: 12),
-                    _buildActionItem(
-                      icon: Icons.swap_horiz_rounded,
-                      title: "Ganti Role (Switch Mode)",
-                      subtitle: "Ubah mode antara Pembeli dan Pedagang",
-                      iconColor: AppColors.accent,
-                      textColor: textColor,
-                      subtitleColor: subtitleColor,
-                      cardBg: cardBg,
-                      cardBorder: cardBorder,
-                      onTap: _confirmSwitchRole,
                     ),
                     const SizedBox(height: 12),
                     _buildActionItem(
